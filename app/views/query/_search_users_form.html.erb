@@ -1,0 +1,20 @@
+<% form_tag( { :action => 'searchUsers', 
+			   :controller => 'query' }, 
+			 { :method => :get } ) do %>
+
+<fieldset>
+    <legend>
+        Search users:
+    </legend>
+    <div class="form_row">
+        <label for="searchterm">
+            Name:
+        </label>
+        <%= text_field_tag :user, @query_search %>
+    </div>
+    <div class="form_row" style="float:right">
+        <%= submit_tag "Search", :class => "submit", :name => nil %>
+    </div>
+</fieldset>
+<% end %>
+

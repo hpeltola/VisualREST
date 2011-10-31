@@ -1,0 +1,17 @@
+<!ELEMENT vr-xmpp-message (message,suggested-transition+)>
+<!ELEMENT message  (#PCDATA)>
+
+<!ELEMENT suggested-transition (description, url, parameters)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT url (#PCDATA)>
+<!ATTLIST url method CDATA #REQUIRED>
+
+<!ELEMENT parameters (context_hash, i_am_client, auth_username, auth_timestamp, auth_hash)>
+<!ELEMENT context_hash (#PCDATA)>
+<!ELEMENT i_am_client (#PCDATA)>
+<!ELEMENT auth_username (#PCDATA)>
+<!ELEMENT auth_timestamp (#PCDATA)>
+<!ELEMENT auth_hash (#PCDATA)>
+
+
+

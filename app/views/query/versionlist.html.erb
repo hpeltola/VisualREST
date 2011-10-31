@@ -1,0 +1,74 @@
+<% if request.url.include?("?") %>
+	<%= auto_discovery_link_tag(:atom, request.url + "&format=atom") %>
+<% else %>
+	<%= auto_discovery_link_tag(:atom, request.url + "?format=atom") %>
+<% end %>
+
+<% if @nothingfound %>
+	Nothing found.
+<% elsif @forbidden %>
+  You don't have rights to access
+<% else %>
+  <h1>Versions of <%= @results.first.name%></h1>
+  <b><%= "Device: " + @results.first.dev_name + ", User: " + @results.first.username %></b>
+  <br/>
+	<%= will_paginate(@results) %>
+	<br/>
+	
+	<table class="files" border="0">
+  		<% id = 0%>
+  		<% @results.each do |file_metadata| %>
+  			<% @fullpath = (file_metadata.path + file_metadata.name.gsub(/[\s]/, '%20'))[1..-1] %>
+			<tr class="<%= cycle('odd', 'even') %>" id="<%= @file_devfile_id %>">
+        		<td>
+            		<%if file_metadata.thumbnail_name != nil %>
+						<a href ="<%= ('/user/' + @results.first.username + '/device/' + @results.first.dev_name + '/files/' + @fullpath + '?version=' + file_metadata.version.to_s) %>">
+	            		<img src="<%= "/thumbnails/"  + file_metadata.device_id.to_s + "/" + file_metadata.thumbnail_name %>"/>
+						</a>
+					<%else %>
+            			<img src="<%= "/thumbnails/vR_no_picture_2.png" %>" alt="No thumbnail" />
+					<%end %>
+        		</td>
+        		<td>
+        		<div>
+        		<div style="float:left">
+				&nbsp;
+            	<% if file_metadata.path != "/" %>
+					<span class="verysmall">
+						<%= file_metadata.path[1..-1] %>
+					</span>
+            	<% end %>
+            	<a href ="<%= ('/user/' + @results.first.username + '/device/' + @results.first.dev_name + '/files/' + @fullpath + '?version=' + file_metadata.version.to_s) %>"><%= file_metadata.name %></a>
+            	<br/>
+				<span class="quitesmall"><%= ("&nbsp;&nbsp;
+									<b>version:</b> " + file_metadata.version.to_s + "<br/>&nbsp;&nbsp;
+									<b>size:</b> " + file_metadata.size.to_s + " B <br/> &nbsp;&nbsp; 
+									<b>type:</b> " + file_metadata.filetype + "<br/> &nbsp;&nbsp; 
+									<b>date:</b> " + file_metadata.filedate.strftime('%F %T')) %>
+           		<br/>
+            	</span>
+
+				</div>
+				<div style="float:right;">
+
+					<div style="float:left;width:180px;text-align:right;">
+	            	<% if file_metadata.uploaded != true %>
+
+					<%= "<script type=\"text/javascript\">\n//<![CDATA[\ndo_polling_#{file_metadata.blob_id.to_s} = false;\nnew PeriodicalExecuter(function() {if (do_polling_#{@blob_id.to_s} == true) { new Ajax.Request('/devfile/isUploadReady/#{@blob_id.to_s}', {asynchronous:true, evalScripts:true, method:'get'}); }}, 8)\n//]]></script>" %> 
+					<span id='<%= file_metadata.blob_id%>_upload' class="quitesmall" >
+						<a href="#" onclick="new Ajax.Request('/user/<%= @results.first.username %>/device/<%= @results.first.dev_name %>/requestUpload/<%= @fullpath %>', {asynchronous:true, evalScripts:true, method:'get', parameters:'id=' + '<%= file_metadata.devfile_file_id %>' + '&blob_id=' + '<%= file_metadata.blob_id %>' + '&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+							<img src="<%= "/thumbnails/vR_upload_32.png" %>" alt="Upload" border="0"/>
+						</a>
+					</span>
+					<% end %>
+					</div>
+            	</div>
+				</div>
+        		</td>
+    		</tr>
+  		<% end %>
+	</table>
+
+	<br/>
+	<%= will_paginate(@results) %>
+<% end %>

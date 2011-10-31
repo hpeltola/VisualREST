@@ -1,0 +1,70 @@
+<% if @querystring_for_feed != nil %>
+	<%= auto_discovery_link_tag(:atom, request.url.gsub(/\/files\?.*$/, "/files.atom?" + @querystring_for_feed)) %>
+<% else %>
+	<%= auto_discovery_link_tag(:atom, request.url.gsub(/\/files.*$/, "/files.atom")) %>
+<% end %>
+
+<% if @query_processing == true %>
+  <p>Query processsing time: 
+  <%= @query_processing_time %>
+  </p>
+<% end %>
+
+<%= render :partial => "search_files_form" %>
+
+<% if not @context.empty? %>
+	<h1>Files of <%= @context[:user].username %></h1>
+	<% if @context[:device] %>
+		<b>Device: <%= @context[:device].dev_name %></b><br/>
+	<% end %>
+	<% if @querystring != nil %>
+		<b>Query: <%= @querystring %></b><br/>
+	<% end %>
+<% elsif @querystring != nil %>
+	<h1>Query: <%= @querystring %></h1>
+<% end %>
+<br/>
+<% if @nothingfound %>
+	Nothing found.
+<% else %>
+	<%= will_paginate(@results) %>
+	<br/>
+	<%= render :partial => "filelist", :locals => { :filelist => @results, :signed_in_user => session[:username]} %>
+	<br/>
+	<%= will_paginate(@results) %>
+<% end %>
+
+<script type="text/javascript">
+  function save_new_metadata_for_file(user, device, fullpath){
+    var type = document.getElementById("new_metadata_type_"+device+"_"+fullpath).value;
+    var value = document.getElementById("new_metadata_value_"+device+"_"+fullpath).value;
+    new Ajax.Request('/user/'+user+'/device/'+device+'/metadata/'+fullpath, {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'metadata_type='+type+'&metadata_value='+value+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200 || data.status == 201){
+                    window.location.reload();
+                  }
+                }
+    });
+  }
+  
+  function checkEnter(e, user, device, fullpath){
+    if (e.keyCode == 13){
+      save_new_metadata_for_file(user, device, fullpath);
+    }
+  }
+  
+  function showOrHideDiv(id, textID){
+    var ele = document.getElementById(id.replace(' ', '%20'));
+    var text = document.getElementById(textID.replace(' ', '%20'));
+    if(ele.style.display == "block"){
+      ele.style.display = "none";
+      text.innerHTML = "More metadata";
+    }
+    else{
+      ele.style.display = "block";
+      text.innerHTML = "Less metadata";
+    }
+    
+  }
+</script>

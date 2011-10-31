@@ -1,0 +1,195 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Context instructions</h1>
+  <p>
+    User can create contexts.
+    User can't create a context with a name that is already in use in his personal contextname list. <br /><br />
+    
+    Creator of context can grant access to other users (members). 
+    Members that have been added to context get xmpp-notification including a link.
+    With the link member can name the context however he wishes, as long as it is unique in his own contextname list. <br /><br />
+
+    Every user has a contextname list of his own.
+  </p>
+
+  <img src="/Documents/context_high-level.png" alt="context_high-level" />
+
+  <p>
+    After member has named the context, member can find the context using his unique name for the context. <br /> <br />  
+    
+    Files (content) that belongs to context, is found with two methods: <br />
+    <ul> 
+      <li> Contexts have metadata. If file has matching metadata with context, the file is part of the context.</li>
+      <li> Files that have metadatatype 'context_hash' with a value of the context.
+          ( File is added to context by adding metadatatype 'context_hash' with hash of the context as a value. )</li>
+    </ul>
+  </p>
+  
+    <img src="/Documents/content_in_context.png" alt="context_high-level" />
+   
+   <p> 
+      The picture above shows how 3 contents belong to a context.
+   </p> 
+  
+<h2>Methods for handling contexts</h2>
+  
+<h3>Creating context</h3>
+
+<ul>
+  <li><b>method:</b>     POST</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/contexts/</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>contextname  - name the context will be saved to the creator</li>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+  <li><b>Additional parameters:</b></li>
+  <ul>
+    <li>metadata=tag/rest+tag/cloud+kuvaus/tekstii</li>
+    <li>begin_time=2010-01-01</li>
+    <li>end_time=2010-01-03</li>
+    <li>icon_data=@/home/niko/testi.png</li>
+    <li>location=humaljarvi</li> 
+    <li>user=testuser+testaaja</li>
+    <li>group=ryhmaRama</li>
+    <li>description=This is a random context</li>
+    <li>private=false  (as default, private=true)</li>
+  </ul>
+</ul>
+
+
+<h3>Modifying context</h3>
+
+<ul>
+  <li><b>method:</b>     POST</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/contexts/{contextname} <br /> 
+                        ( or http://visualrest.cs.tut.fi/contexts/{contexthash} )</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication, if context is private ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+  <li><b>Additional parameters when:</b></li>
+  <ul> 
+    <li>Adding file to context: file_uri=/user/heikki/device/dev5_ubuntu/files/2.jpg</li>
+    <li>Changing location: location=tampere</li>
+    <li>Adding metadata: metadata=tag/tampere+tag/hervanta+city/tampere
+    <li>Delete metadata: delete_metadata=tag/tampere+tag/hervanta</li>
+    <li>Adding users:user=testuser+kalle</li>
+    <li>Removing users:remove_user=testuser+kalle</li>
+    <li>Adding groups: group=ryhma1+group2</li>
+    <li>Removing groups: remove_group=ryhma1+group2</li>
+    <li>begin_time=2010-01-01</li>
+    <li>end_time=2010-01-03</li>
+    <li>Setting thumbnail: icon_data=@/home/niko/testi.png</li>
+    <li>description=This is a random context</li>
+    <li>Setting context public/private: public=true  or public=false</li>
+  </ul>
+</ul>
+
+<h3>Change contextname for user</h3>
+<ul>
+  <li><b>description:</b></li>
+    <ul>
+      <li>This adds context for user or changes users name for context.</li>
+      <li>Every user saves context with whatever name they wish.</li>
+      <li>Context names are unique for one user.</li>
+      <li>User can change the name they use for certain context. </li>
+    </ul>
+  <li><b>method:</b> PUT</li>
+  <li><b>url: </b> http://visualrest.cs.tut.fi/user/{username}/contexts/{contextname}</li>
+  <ul><li>{contextname} is the name context will be saved to user with.</li></ul>
+  <li><b>parameters:</b></li>
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+    <li>context_hash or old_name (old_name is of form: username.personalContextname. e.g. heikki.tampere) </li>
+  </ul>
+</ul>
+
+<h3>Delete context</h3>
+<ul>
+  <li><b>description:</b></li>
+    <ul>
+      <li>Deletes context and all links to it.</li>
+      <li>Once context has been deleted, it cannot be recovered.</li>
+      <li>Deleting context, doesn't delete any files from the server.</li>
+      <li>Only the user who has created context, can delete it.
+    </ul>
+  <li><b>method:</b> DELETE</li>
+  <li><b>url: </b> http://visualrest.cs.tut.fi/user/{username}/contexts/{contextname}</li>
+  <li><b>parameters:</b></li>
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+
+<h3>Delete all contexts from user</h3>
+<ul>
+  <li><b>description:</b></li>
+    <ul>
+      <li>Deletes contexts and all links to them.</li>
+      <li>Once context has been deleted, it cannot be recovered.</li>
+      <li>Deleting context, doesn't delete any files from the server.</li>
+      <li>Only the user who has created context, can delete it.
+    </ul>
+  <li><b>method:</b> DELETE</li>
+  <li><b>url: </b> http://visualrest.cs.tut.fi/user/{username}/</li>
+  <li><b>parameters:</b></li>
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+
+
+<h2>Getting contexts:</h2>
+
+<h3>Get info of certain context</h3>
+<ul>
+  <li><b>description:</b></li>
+  <ul>
+    <li>Get info of a context</li> 
+    <li>{contextname} is the name context is saved to {username} </li>
+  </ul>  
+  <li><b>method:</b> GET </li>
+  <li><b>url:</b>  http://visualrest.cs.tut.fi/user/{username}/contexts/{contextname}.atom <br />
+                   ( or http://visualrest.cs.tut.fi/contexts/{contexthash} )</li>
+  <li><b>parameters:</b></li>
+  <ul> 
+    <li>authentication (if context is not public)( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+
+
+<h3>Query contexts added to certain user</h3>
+<ul>
+  <li><b>description:</b>Returns contextname list for this user.</li>
+  <li><b>method:</b> GET</li>
+  <li><b>url:</b> http://visualrest.cs.tut.fi/user/{username}/contexts.atom</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication (if not public contexts)( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+  <li><b>additional parameters for queries:</b></li>
+  <ul>
+    <li>name (part of contextname, or the whole contextname)</li>
+  </ul>
+</ul>
+
+
+
+<h3>Query all available contexts</h3>
+<ul>
+  <li><b>method:</b> GET</li>
+  <li><b>url:</b> http://visualrest.cs.tut.fi/contexts.atom</li>
+  <li><b>parameters:</b></li>
+  <ul>
+    <li>authentication (if not public contexts)( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+ <li><b>additional parameters for queries:</b></li>
+  <ul>
+    <li>name (part of contextname, or the whole contextname)</li>
+  </ul>
+</ul>

@@ -1,0 +1,89 @@
+<div id="settings_top">
+<span>Import content from flickr</span>
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/importContentFromFlickr', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Import new content from Flickr to VisualREST</span>
+<%else%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/importContentFromFlickr', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+<fieldset>
+  <legend>Flickr account</legend>
+  <% if @flickr_url and not @flickr_url.nil? %>
+  
+    <p>You need to give access to your Flickr account by getting Flickr Token.
+      <br />
+      Open popup window to <button onclick="basicPopup('<%=@flickr_url%>');return false">get Flickr token</button>
+    </p>
+    
+    <p>
+      Authorized?
+      <button onclick="refreshFlickrDiv()">Refresh</button>
+    </p>
+  <%else%>
+  
+  <%if @gettingPhotosFromFlickr and @gettingPhotosFromFlickr == true %>
+    <span style='color:red'>
+      Started to get content from Flickr to your virtualContainer: <%=@gettingToContainer%> <br />
+      The amount of files that will be downloaded: <%=@amountOfPhotosFromFlickr%>
+    </span><br /><br />
+  
+  <%end%>
+  
+  Get photos from user: <%=@flickr_data.s_username%><br />
+  You have imported Public photos: <%if @flickr_data.extra_1 == nil%> Never <%else%> <%= @flickr_data.extra_1.to_s%> <%end%> <br />
+  You have imported Private photos: <%if @flickr_data.extra_2 == nil%> Never <%else%> <%= @flickr_data.extra_2.to_s%> <%end%>
+    <table>
+      <tr>
+        <td>Container</td>
+        <td>
+          <% if @virtualUserDevices.size == 0 %>
+            <span style='color:red'>You need virtual container</span>
+          <% else %>
+            <select id="input_device">
+            <% @virtualUserDevices.each do |x| %>
+              <% if x == 0%>
+                <option value="<%= x.dev_name%>" selected="selected"><%= x.dev_name%></option>
+              <% else%>
+                <option value="<%= x.dev_name%>"><%= x.dev_name%></option>
+              <% end %>
+            <% end %>
+            </select>
+          <% end %>
+          
+        </td>
+      </tr>
+      <tr>
+        <td>Photos to get:</td>
+        <td>
+          <select id="privacy_filter">
+            <option value="public" selected="selected">Public photos</option>
+            <option value="private">Private photos</option>
+          </select>
+        </td>
+      </tr>
+      
+    </table>  
+    <button onclick="getPhotosFromFlickr('input_device', 'privacy_filter')">Get photos from Flickr</button>
+
+    <button onclick="deleteFlickrToken()" style="float: right;">Delete Flickr token</button></span>
+  
+  
+  <%end%>
+</fieldset>
+  
+<%end%>
+  
+  
+  
+  
+  

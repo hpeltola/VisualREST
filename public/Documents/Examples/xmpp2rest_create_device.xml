@@ -1,0 +1,14 @@
+
+<?xml version="1.0" ?>
+
+<xmpp2rest>
+  <method>CREATE</method>
+  <user username="ollipolli">
+    <device devicename="my_n8">
+      <dev_type>N8</dev_type>  
+      <password>ollipolli</password>
+    </device>
+  </user>
+</xmpp2rest>
+
+

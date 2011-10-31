@@ -1,0 +1,18 @@
+<div id="flickrAuthentication">
+<% if @receivedToken and not @receivedToken.nil? and @receivedToken == true %>
+  <h1>Flickr token received</h1>
+  <p>
+    Authenticated successfully.<br />
+    <button onclick="javascript:window.close()">Close</button>
+  </p>
+
+<%else%>
+  <h1>Error</h1>
+ <p>
+   Problem authenticating with Flickr. Please try again. <br />
+   <button onclick="javascript:window.close()">Close</button>
+ </p>
+<%end%>
+
+</div>
+

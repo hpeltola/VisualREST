@@ -1,0 +1,121 @@
+<div id="settings_top">
+<span>Dropbox Settings</span>
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <%puts "hide"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/dropboxSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Import content from Dropbox to VisualREST</span>
+<%else%>
+  <%puts "show"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/dropboxSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+  
+<%if not @db_auth_token%>
+  <div id="red-box">
+    <p>You need to get authentication token first!</p>
+
+
+    Username <input id="uname" value="">
+    Password <input id="passw" value="">
+    
+    <br />
+    <button onclick="getDBtoken()">Get Dropbox access token</button>
+    
+  </div>
+<%end%>
+
+
+
+<%if @db_auth_token %>
+
+  <fieldset>
+  <legend>You are polling these dropbox folders:</legend>
+      
+      <table>
+        <tr>          
+          <th>Dropbox path</th>
+          <th>Container name</th>
+        </tr>
+      
+      <% @folders_and_containers.each do |fc| %>
+        <tr>          
+          <td><%= fc.path %></td>
+          <td><%= fc.dev_name %></td>
+          <td>
+            <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/dbDeletePoller/<%= fc.ud_id %>', '/user/<%= session[:username] %>/dropboxSettings/')" style="float: right;">Delete</button>
+          </td> 
+        </tr>
+      <% end %>
+      </table>
+  </fieldset>
+
+<%puts "count: " + @folders_and_containers.count.to_s %>
+
+<%if @folders_and_containers.count < 1 %>
+
+<% form_tag( "/user/" + session[:username] + "/dbCreateDirPoller", :method => "post" ) do %>
+   <fieldset>
+    <legend>Select dropbox folder that you want to synchronize:</legend>
+      
+      <% @db_dirs.each do |path| %>
+        <br><%= radio_button_tag 'checked_dir', path, false %>
+        <%= label_tag "Folder: #{path}", path.humanize %>
+      <% end %>
+ 
+    <br />
+    <br />
+    
+    
+    <%if @v_containers%>
+    Select container:
+      <select name="container_name" >      
+      <% @v_containers.each do |vc| %>
+        <option value="<%=vc.dev_name%>" <%if vc.dev_name == "dropbox_container" %>selected="selected"<%end%> ><%=vc.dev_name%></option>
+      <% end %>
+      </select>
+    <%end%>
+    
+    
+    <br />
+    <br />
+        
+    <%= submit_tag "Synchronize", :class => "submit", :name => nil %>
+    
+  </fieldset>
+
+  <%end%> <!-- form_tag -->
+
+<%else%>
+  <div id="red-box">
+    <p>Each user can only have one Dropbox folder to sync.</p>
+  </div>
+<%end%> <!-- count > 1 -->
+
+
+  <fieldset>
+  <legend>Delete DropBox access token</legend>
+      <center>        
+      <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/dbDeleteToken', '/user/<%= session[:username] %>/dropboxSettings/')" style="float: right;">Delete DropBox token</button>      
+      </center>
+    <p><i>If cannot see dropbox folders, try deleting the access token and getting a new one!</i></p>
+  </fieldset>
+
+<%end%>
+
+
+  
+<%end%> <!-- db_auth_token -->
+  
+  
+  
+  
+  

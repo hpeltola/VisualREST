@@ -1,0 +1,5 @@
+<li id="<%= params[:obsDId] %>">
+  <a href="#" onclick="new Ajax.Request('<%= request.request_uri.to_s %>', {asynchronous:true, evalScripts:true, method:'put', parameters: 'node_nick=<%=params[:node_nick]%>&ajax=true&file_uri=' + '<%= params[:file_uri] %>' + '&obsDId=' + '<%= params[:obsDId] %>' + '&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+     <%= params[:node_nick] %> - request sent
+  </a>
+</li>

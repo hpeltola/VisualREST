@@ -1,0 +1,13 @@
+
+<?xml version="1.0" ?> 
+
+<xmpp2rest>
+  <method>CREATE</method>
+  <user username="ollipolli">
+    <group groupname="ei">
+      <user username="ollipolli"/>  
+    </group>
+  </user>
+</xmpp2rest>
+
+

@@ -1,0 +1,42 @@
+<% form_tag( { :action => 'saveUserGroups', :user_id => params[:user_id],
+			   :username => session[:username], :controller => 'user' }, 
+			 { :method => :post }) do %>
+
+<fieldset>
+    <legend>
+        Select in which groups <%= User.find_by_id(params[:user_id]).real_name %> belongs to:
+    </legend>
+    <table class="users" border="0" cellpadding="5" cellspacing="1">
+    <tr class="header">
+    	<th>
+    		Belongs
+		</th>
+        <th>
+            Group name
+        </th>
+        <th>
+            Group id
+        </th>
+    </tr>
+	<% i = 0 %>
+    <% @groups.each do |group| %>
+    <tr class="<%= cycle('odd', 'even') %>">
+    	<td>
+    		<%= check_box "groups", group.name, options = {:checked => @group_checked[i]} %>
+    	</td>
+        <td>
+            <%= group.name %>
+        </td>
+        <td>
+            <%= group.id %>
+        </td>
+    </tr>
+	<% i = i+1 %>
+    <% end %>
+	</table>
+	
+    <div class="form_row">
+        <%= submit_tag "Save", :class => "submit" %>
+    </div>
+</fieldset>
+<% end %>

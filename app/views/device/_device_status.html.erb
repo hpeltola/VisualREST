@@ -1,0 +1,10 @@
+
+<%if image%>
+	<% if status == "online"%>
+		<img src="<%= "/thumbnails/vR_online_2_32.png" %>" alt="Online" />
+	<% else %>
+		<img src="<%= "/thumbnails/vR_offline_32.png" %>" alt="Offline" />
+	<% end %>
+<%else%>
+	<b>Status: </b> <%= status %>
+<%end%>

@@ -1,0 +1,27 @@
+
+<?xml version="1.0" ?> 
+
+<xmpp2rest>
+  <method>UPDATE</method>
+  <user username="ollipolli">
+    <device devicename="my_n8">
+    
+      <filerights fullpath="/foobar.txt">
+
+        <public><allow/></public>
+         
+        <!-- or -->
+          <!--
+        <groups>
+          <group groupname ="ei" ><allow/></group>
+          <group groupname ="joo" ><deny/></group>
+        </groups>
+         -->     
+      </filerights>
+    
+    </device>
+  </user>
+</xmpp2rest>
+
+
+

@@ -1,0 +1,184 @@
+
+# doo [uri] [put|delete|post|get] *[parametre_name=>parametre_value]
+
+
+#	USER
+
+# Adds new user:
+doo /user/teemu/ put password=>teemu real_name=>Teemu
+
+
+
+
+#	GROUP
+
+# Adds new group for user:
+doo /user/testiuuseri/group/koti/ put
+
+# Removes group from user:
+doo /user/testiuuseri/group/koti/ delete
+
+
+
+
+#	USERS TO GROUP
+
+# Adds testuser to koti:
+doo /group/koti/user/testuser/ put
+
+# Removes user from group:
+doo /group/koti/user/testuser/ delete
+
+
+
+
+#	FILERIGHTS
+
+# Makes 1.jpg public:
+doo /user/testiuuseri/device/vimpain/filerights/1.jpg post public=>true
+
+# Edits 1.jpg filerights, gives group AA permission to file and denies from group Työ. (Notice parametres!!!):
+doo /user/testiuuseri/device/vimpain/filerights/1.jpg post group:Työ=>0 group:AA=>1
+
+
+
+#	DEVICES
+
+# Adds new device to user:
+doo /user/testiuuseri/device/omaPC/ put password=>test dev_type=>testi
+
+# Removes device from user (Notice! All data, thumbnails and uploaded files releated to device will be removed!):
+doo /user/testiuuseri/device/omaPC/ delete
+
+
+# Gets user devices:
+doo /user/testiuuseri/devices[.atom] get
+
+# Deletes all devices and their files from user:
+doo /user/testiuuseri/devices delete
+
+
+# Gets all files of user:
+doo /user/testiuuseri/files[.atom] get
+
+# Deletes all files from user:
+doo /user/testiuuseri/files delete
+
+
+# Marks that device is online:
+doo /user/testiuuseri/device/vimpain/online post
+
+# Gets time when device was lastime online:
+doo /user/testiuuseri/device/vimpain/online get
+
+
+# Sends filelist to server in messages body:
+doo /user/testiuuseri/device/vimpain/files put
+
+# Deletes all files of device (Notice! All files, thumbnails and uploaded files releated to device will be removed!):
+doo /user/testiuuseri/device/vimpain/files delete
+
+
+# Gets file from device (to the server):
+doo /user/testiuuseri/device/vimpain/files/1.jpg
+
+# Uploads file to server. Uses http PUT to uri: /user/testiuuseri/device/vimpain/2.jpg:
+upload /2.jpg
+
+# Delets uploaded file from server:
+doo /user/testiuuseri/device/vimpain/files/1.jpg delete
+
+
+
+*******************************************************
+
+
+
+
+********************************************************
+
+# Prerequisites:
+1. No group Home: doo /user/testiuuseri/group/Home/ delete
+2. File is public: doo /user/testiuuseri/device/vimpain/filerights/1.jpg post public=>true
+
+      ****
+
+
+#	DEMO 1
+
+1. {show settings}
+
+2. # New group for user:
+   doo /user/testiuuseri/group/Home/ put
+
+3. {show file rihgts of 1.jpg - it is public}
+
+4. # Edit filerights (make 1.jpg private):
+   doo /user/testiuuseri/device/vimpain/filerights/1.jpg post group:Home=>0 group:Work=>1
+
+5. {show file rihgts of 1.jpg - it is private and group Home has no rights to it}
+
+6. {try to access the file as testuser - denied from: http://nota.cs.tut.fi:8080/user/testiuuseri/device/vimpain/files }
+
+7. {show Manage users in groups}
+
+8. # Adds testuser to Home -group:
+   doo /group/Home/user/testuser/ put
+
+9. {show Manage users in groups}
+
+10.  # Rights for Home to access the file:
+    doo /user/testiuuseri/device/vimpain/filerights/1.jpg post group:Home=>1
+
+11. {try to access the file - allowed}
+
+12. # Delete group from user:
+    doo /user/testiuuseri/group/Home/ delete
+
+13. {try to access the file - denied}
+
+14. # Files can be made public:
+    doo /user/testiuuseri/device/vimpain/filerights/1.jpg post public=>true
+
+15. {try to access the file - allowed}
+
+***********************************************
+
+
+
+**********************************************************
+
+# Prerequisites: 
+1. No device omaPC: doo /user/testiuuseri/device/omaPC/ delete
+
+      *****
+
+
+#	DEMO 2
+
+# New devices can be added and edited:
+1. doo /user/testiuuseri/device/omaPC/ put password=>test dev_type=>testi
+2. {show devices list}
+3. doo /user/testiuuseri/device/omaPC/ delete
+
+*********************************************
+
+
+
+*****************************************************
+# Prerequisites: 
+1. File not on the server: doo /user/testiuuseri/device/vimpain/files/2.jpg delete
+
+
+#	DEMO 3
+1. # When the file is not on the server, returns the same page as in browser. (Says that waiting for device to upload file.. ): 
+   doo /user/testiuuseri/device/vimpain/files/2.jpg get
+2. {Get xmpp message from server that asks client to upload the file}
+3. #When file is uploaded, the picture is returned:
+   doo /user/testiuuseri/device/vimpain/files/2.jpg get
+
+
+
+********************************************
+
+

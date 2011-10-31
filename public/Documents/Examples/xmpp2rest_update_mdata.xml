@@ -1,0 +1,24 @@
+
+<?xml version="1.0" ?> 
+
+<xmpp2rest>
+  <method>UPDATE</method>
+  <user username="testikkeli">
+    <device devicename="t1">
+    
+      <files>
+      
+        <file fullpath="joku/juku/foobar.txt">
+          <!-- optional-->
+          <!--<version num="1"></version>-->
+          <!-- optional users added metadata-->
+          <metadata metadata_type="faces">6</metadata>
+        <!--  <metadata metadata_type="butts">2</metadata>-->
+        </file>
+        
+      </files>
+    </device>
+  </user>
+</xmpp2rest>
+
+

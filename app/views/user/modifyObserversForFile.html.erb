@@ -1,0 +1,49 @@
+<% if @error %>
+<%= @error %>
+<% else %>
+
+<% if @observed_file.path == "/"
+	   @fullpath = @observed_file.name
+   else
+	   @fullpath = (@observed_file.path.to_s + @observed_file.name)[1..-1]
+   end %>
+
+<p>File: <b><%= @observed_file.name %></b><br/>
+<p>File id: <b><%= @observed_file.id.to_s %></b></p>
+<br/>
+
+<fieldset>
+	<legend>Notify these nodes:</legend>
+
+<% form_tag( url_for( :action => 'saveObserversForFile', :controller => 'user').gsub("%2F", "/"), { :method => :put }) do %>
+    <% i = 0; cols = 4 %>
+    
+    <!-- passing the file's uri ahead -->
+    <%= hidden_field_tag "file_uri", @file_uri %>
+    
+    <table class="users" border="0" cellpadding="5" cellspacing="1">
+        
+        
+        <% @node_names.each do |nick, nodepath| %>
+            <tr class="<%= cycle('odd', 'even') %>">
+            <td>
+                  	<%= check_box "observers", nodepath, options = {:checked => @observers_checked[i]} %> 
+                  	<%= nodepath %><br/>
+                  	<% i = i+1 %>
+            </td>
+        	  </tr>
+        <% end %>
+        
+        <% if (i % cols != 0) %>
+        </tr>
+        <% end %>
+        
+        <tr>
+          <td colspan="<%=cols%>" align="right">
+            <%= submit_tag( "Save" ) %>
+          </td>
+        </tr>
+    </table>
+<% end %>	  
+</fieldset>
+<%end%>

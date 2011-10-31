@@ -1,0 +1,27 @@
+
+<% if @device.dev_type == "virtual_container"%>
+  <h1>Upload content</h1>
+  
+  <% form_tag( "/user/#{@user.username}/device/#{@device.dev_name}/upload", :multipart => true) do %>
+
+  <fieldset>
+    <p><label for="upload_file">Select File</label> : 
+    <%= file_field "upload", "datafile" %></p>
+    <%= submit_tag "Upload content", :class => "submit" %>
+  </fieldset>
+  
+  <% end %>
+<% end %>
+	
+<h2>Device informations</h2>
+
+
+<%= @map.to_html %>
+<%= @map.div(:width => 600, :height => 400) %>
+
+<div id='deviceLocationGMapControls'>
+	<%= render :partial => "deviceLocationMapControls" %>
+</div>
+
+
+

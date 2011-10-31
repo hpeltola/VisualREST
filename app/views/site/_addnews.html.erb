@@ -1,0 +1,25 @@
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <%puts "hide"%>
+  <a href="#" onclick="new Ajax.Request('/ajax/addnews', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    Add news
+  </a>
+
+
+<%else%>
+  <%puts "show"%>  
+  <a href="#" onclick="new Ajax.Request('/ajax/addnews', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    Hide add news
+  </a>
+
+
+
+<% form_for :frontpage_news, :url => { :controller => 'site', :username => session[:username], :action => "createNews" }, :html => { :method => :put } do |form| %>  
+  <%= error_messages_for "news" %>
+  <div class="form_row"> 
+    <%= form.text_area :description, :rows => FrontpageNews::MESSAGEBOX_ROWS, :cols => FrontpageNews::MESSAGEBOX_COLS %>
+  </div> 
+  <div class="form_row">  
+    <%= submit_tag "Add!", :class => "submit" %>
+  </div>
+<% end %>
+<%end%>

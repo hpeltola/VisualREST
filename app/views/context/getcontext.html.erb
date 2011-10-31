@@ -1,0 +1,124 @@
+
+
+<h1>Context: <%= @context_named_by_user %></h1>
+
+
+
+<% @context_metadatas = @context_metadatas == nil ? [] : @context_metadatas %>
+<img src=<%=@context.icon_url%> alt="icon" />
+<div id=basic_metadatas>
+  <table border=1>
+    <tr>
+      <td><b>Description:</b></td>
+      <td><%= @context.description %></td>
+    </tr>
+    <tr>
+      <td><b>Query uri:</b></td>
+      <td><a href="<%= @host+@context.query_uri %>"><%= @host+@context.query_uri %></a></td>
+    </tr>
+    <tr>
+      <td><b>Private context:</b></td>
+      <td><%= @context.private.to_s %></td>
+    </tr>
+    <tr>
+      <td><b>Context hash:</b></td>
+      <td><%= @context.context_hash %></td>
+    </tr>
+    <tr title="User who owns this context">
+      <td><b>Context owner:</b></td>
+      <td><%= @owner.username %></td>
+    </tr>
+    <tr title="The name the owner has given for this context">
+      <td><b>Context owner named:</b></td>
+      <td><%= @context.name %></td>
+    </tr>
+    <tr>
+      <td><b>Context node path:</b></td>
+      <td><%= @context.node_path %></td>
+    </tr>
+    <tr>
+      <td><b>Context node service:</b></td>
+      <td><%= @context.node_service %></td>
+    </tr>
+    <tr>
+      <td><b>Context rank value:</b></td>
+      <td><%= @context.rank.to_s %></td>
+    </tr>
+  </table>
+</div>
+
+<div>
+  <% if @members.size != 0 %>
+  <table>
+    <tr><th><b>Members:</b></th><td><ul>
+            <% @members.each do |memb| %>
+              <li><%=memb.username%></li>   
+            <% end %>
+            </ul></td></tr>
+  </table>
+  <% end %>
+</div>
+
+<div id=other_metadatas>
+  <% if @context_metadatas.size != 0 %>
+    <p><b>Other metadata:</b> 
+      <table border=1>
+        <tr>
+          <th>Type</th>        
+          <th>Value</th>
+        </tr>
+        <% @context_metadatas.each do |md| %>
+          <tr>
+            <td><b><%= md.type_name %></b></td>  
+            <td><%= md.value %></td>
+            <td><button onclick="delete_context_metadata('<%= md.type_name %>', '<%= md.value %>');">Delete</button>
+          </tr>       
+        <% end %>
+      </table>
+        
+    </p>
+  <% end %>
+  <%if @metadatatypes %>
+    <b>Add metadata:</b><br />
+                 <select id="context_metadatatype">
+                   <% @metadatatypes.each do |mtype|%>
+                      <option><%=mtype.name%></option>
+                   <% end%>
+                 </select>
+                 <input id="context_metadata_value" onkeypress="checkEnter(event)">
+                 <button onclick="save_new_metadata_for_context();">Save</button>
+                 
+  <% end %>
+</div>
+
+<script type="text/javascript">
+    function checkEnter(e){
+      if (e.keyCode == 13){
+        save_new_metadata_for_context();
+      }
+    }
+    
+    function save_new_metadata_for_context(){
+      var type = document.getElementById("context_metadatatype").value;
+      var value = document.getElementById("context_metadata_value").value;
+      new Ajax.Request('/contexts/<%=@context.context_hash%>', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'metadata='+type+'/'+value+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200 || data.status == 201){
+                    window.location.reload();
+                  }
+                }
+      });
+    }
+    
+    function delete_context_metadata(type, value){
+      new Ajax.Request('/contexts/<%=@context.context_hash%>', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'delete_metadata='+type+'/'+value+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200 || data.status == 201){
+                    window.location.reload();
+                  }
+                }
+      });
+    }
+</script>

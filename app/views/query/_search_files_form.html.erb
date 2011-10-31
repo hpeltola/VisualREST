@@ -1,0 +1,717 @@
+<% @available_sort_types = ["created_at", "modified_at", "size", "rank", "user", 
+                          "device", "path", "filename"] %>
+                          
+<% @metadatatypes = MetadataType.find(:all, :order => "updated_at ASC" ) %>
+
+<% @available_cluster_types = [["created_at", "datetime"], ["modified_at", "datetime"], ["size", "float"], 
+                          ["rank", "float"], ["user", "string"], 
+                          ["device", "string"], ["path", "string"], ["filename", "string"]]  %>
+
+
+<% @metadatatypes.each do |type| %>
+  <% tmp = [type.name, type.value_type]%>
+  <% @available_cluster_types.push(tmp) %>
+<% end %>
+
+
+<div id="query_form">
+  <fieldset>
+    <legend>Search files</legend>
+    <table id="query_table">
+      <tr>
+        <th title="Press CTRL+Down to see all candidates">Type</th>
+        <th>Value</th>
+        <th title="Comparison operator can be given for date or float types only.">Compare</th>
+        <th title="When selected: Content that don't have the metadatatype, is not removed from search results.">Sparse ( All <input type="checkbox" id="sparseAll" value="Sparse all" />)</th>
+      </tr>         
+    </table>    
+  
+    <button onClick="add_new_param_line();">Add line</button>
+  
+    <br /><br />
+    <div id="sort_options">
+      <b>Sort by:</b>
+  
+      <select id="sort_option_0">
+          <option selected></option>
+        <% @available_sort_types.each do |x| %>
+          <option><%=x%></option>
+        <% end %>
+      </select>
+      <select id="order_option_0">
+        <option>desc</option>
+        <option>asc</option>
+      </select>
+    </div>
+        
+    <div id="get_certain_group_options" title="Get only files from users that are part of this group">
+      
+      <div id="group_line_0">
+        <b>Group owner:</b> <input id="group_owner_0"> <b>Group names:</b> <input id="group_name_0" onkeypress="checkEnterMakeQuery(event)">
+      </div>
+      
+      <div id="group_line_1" style="display:none">
+        <b>Group owner:</b> <input id="group_owner_1"> <b>Group names:</b> <input id="group_name_1" onkeypress="checkEnterMakeQuery(event)">
+      </div>      
+      
+      <div id="group_line_2" style="display:none">
+        <b>Group owner:</b> <input id="group_owner_2"> <b>Group names:</b> <input id="group_name_2" onkeypress="checkEnterMakeQuery(event)">
+      </div>
+            
+    </div>
+    
+    <div id="available_files_only">
+      <b>Available files only:</b> <input type="checkbox" id="onlyAvailable" value="only available" />
+    </div>
+    
+    <div id="show_deleted_files">
+      <b>Show deleted files:</b> <input type="checkbox" id="showDeletedFiles" value="show deleted files" />
+    </div>
+    
+    <div id="query_processing_time">
+      <b>Show query processing time:</b> <input type="checkbox" id="queryProcessingTime" value="query processing time" />
+    </div>
+    
+    <div onkeypress="checkEnterMakeQuery(event)">
+      <b>Cluster by:</b> 
+      
+      <div id="cluster_line_0">
+        <select id="cluster_option_0" onchange="clusterOptionChanged('cluster_option_0', 'cluster_value_0');">
+        <option selected></option>
+        <% @available_cluster_types.each do |x| %>
+          <option><%=x[0]%></option>
+        <% end %>
+        </select>
+        <input value="" id="cluster_value_0">
+      </div>
+      
+      <div id="cluster_line_1" style="display:none">
+        <select id="cluster_option_1" onchange="clusterOptionChanged('cluster_option_1', 'cluster_value_1');">
+        <option selected></option>
+        <% @available_cluster_types.each do |x| %>
+          <option><%=x[0]%></option>
+        <% end %>
+        </select>
+        <input value="" id="cluster_value_1">
+      </div>
+
+      <div id="cluster_line_2" style="display:none">
+        <select id="cluster_option_2" onchange="clusterOptionChanged('cluster_option_2', 'cluster_value_2');">
+        <option selected></option>
+        <% @available_cluster_types.each do |x| %>
+          <option><%=x[0]%></option>
+        <% end %>
+        </select>
+        <input value="" id="cluster_value_2">
+      </div>
+      
+      <button onClick="show_new_cluster_line();">Add line</button>
+      
+    </div>
+    
+    <button onClick="make_query();" style="float:right">Search</button>
+  </fieldset>
+</div>
+
+
+
+<script type="text/javascript">
+  // List of available sort types
+  var list_of_sort_types = new Array(<% @available_sort_types.each_with_index do |x,i| %><%if i != 0%><%=","%><%end%>"<%=x%>"<% end %>)
+
+
+  // List of metadatatypes already in the system
+  var list_of_metadatatypes = new Array("search", "filename", "path", "created_at",
+                                      "modified_at",
+                                      "device", "size", "type", "user", "rank", "blob_hash");
+                                      
+  var list_of_clustertypes = new Array;
+  
+  <% @available_cluster_types.each do |x| %>
+    list_of_clustertypes.push(new Array("<%=x[0]%>", "<%=x[1]%>"));
+  <% end %>                                      
+                                      
+  // Add also all user added metadatatypes to the list
+  <% @metadatatypes.each do |type| %>
+    list_of_metadatatypes.push("<%= type.name %>");
+  <% end %>
+  
+  // Sort metadatatypes
+  list_of_metadatatypes.sort();
+  
+  // Javascript for metadatatype autosuggestion
+  // Used when page is loaded, to start all suggest divs                                      
+  function startSuggest() {
+    if(suggest_hash != null){
+      for(var x in suggest_hash){
+        startNewSuggest(x,suggest_hash[x]);
+      }
+    }
+  }
+  
+  function startNewSuggest(input_id, suggest_id) {
+    new Suggest.Local(
+      input_id,    // input element id.
+      suggest_id, // suggestion area id.
+      list_of_metadatatypes,      // suggest candidates list
+      {dispMax: 20, interval: 1000, highlight: true, dispAllKey: true}); // options
+  }
+
+
+    // Adds new parameter line
+    function add_param_line(type, value, type_id, suggest_id, sparse, sparse_id, comp_id, comp_index) {
+
+      // Create new row
+      var row = document.createElement("tr");
+      row.setAttribute("class", "param_row");
+      
+      // Create table-cell for type and value
+      var td_type = document.createElement("td");
+      var td_value = document.createElement("td");
+      var td_comp = document.createElement("td");
+      var td_sparse = document.createElement("td");
+      row.appendChild(td_type);
+      row.appendChild(td_value);
+      row.appendChild(td_comp);
+      row.appendChild(td_sparse);
+      
+      // If enter is pressed inside attribute box -> make query
+      td_value.setAttribute("onkeypress","checkEnterMakeQuery(event)");
+      td_comp.setAttribute("onkeypress","checkEnterMakeQuery(event)");
+
+      // Create input box for type
+      var type_box = document.createElement("input");
+      type_box.setAttribute("value", type);
+      td_type.appendChild(type_box);
+      td_type.setAttribute("title", "Press CTRL+Down to see all candidates");
+      type_box.setAttribute("autocomplete", "off");
+      type_box.setAttribute("onkeyup", 'validateType("'+type_id+'")');
+      
+      // ID for type-box
+      type_box.setAttribute("id", type_id);
+      // Div for suggestions
+      var suggest_div = document.createElement("div");
+      suggest_div.setAttribute("id", suggest_id);
+      suggest_div.setAttribute("class", "suggest");
+      
+      td_type.appendChild(suggest_div);
+      
+      var value_box = document.createElement("input");
+      value_box.setAttribute("value", value)
+      td_value.appendChild(value_box);
+      value_box.setAttribute("autocomplete", "off");
+      
+      var comparison_box = document.createElement("select");
+      comparison_box.setAttribute("id", comp_id);
+      comparison_box.setAttribute("title", "Comparison operator can be given for date or float types only.");
+      var tmp_option1 =  document.createElement("option");
+      var tmp_option2 =  document.createElement("option");
+      var tmp_option3 =  document.createElement("option");
+      var tmp_option4 =  document.createElement("option");
+      var tmp_option5 =  document.createElement("option");
+
+      comparison_box.appendChild(tmp_option1);
+      tmp_option2.innerHTML = "min";      
+      comparison_box.appendChild(tmp_option2);
+      tmp_option3.innerHTML = "max";      
+      comparison_box.appendChild(tmp_option3);
+      tmp_option4.innerHTML = "smaller";      
+      comparison_box.appendChild(tmp_option4);
+      tmp_option5.innerHTML = "bigger";      
+      comparison_box.appendChild(tmp_option5);
+      
+      comparison_box.selectedIndex=comp_index;
+      
+      td_comp.appendChild(comparison_box);
+      td_comp.appendChild(comparison_box);
+      
+      // Create input box for sparse
+      var sparse_check = document.createElement("input");
+      sparse_check.setAttribute("type", "checkBox");
+      sparse_check.setAttribute("id", sparse_id);
+      sparse_check.setAttribute("name", "sparse_"+type)
+      if( sparse == true){
+        sparse_check.setAttribute("checked", "checked");
+      }
+     // else{
+     //   sparse_check.setAttribute("checked", "");
+     // }
+      
+      td_sparse.appendChild(sparse_check);
+      
+      
+      document.getElementById("query_table").appendChild(row); 
+    }
+    
+    
+    // Used when user adds new parameter lines
+    function add_new_param_line(){
+      // Find id of last input-box and suggest_div
+      var id_n = document.getElementById("query_table").lastChild.firstChild.firstChild.id;
+      var next_id = 0;
+      if( id_n != null){
+        next_id = parseInt((id_n.charAt(id_n.length-1)))+1;
+      }
+      var sparse = false;
+      add_param_line("", "", "type_input_"+next_id, "suggest_div_"+next_id, sparse, "sparse_input_"+next_id, "comp_input_"+next_id, 0 )
+      
+      startNewSuggest("type_input_"+next_id, "suggest_div_"+next_id);
+      
+    }
+    
+    
+    function show_new_cluster_line(){
+      var line = document.getElementById("cluster_line_1");
+      var line2 = document.getElementById("cluster_line_2");
+      if( line.style.display == "none"){
+        line.style.display = "block";
+      }
+      else if( line2.style.display == "none"){
+        line2.style.display = "block";
+      }
+    }
+    
+    function clusterOptionChanged(clusterId, clusterValue){
+      var tmp = document.getElementById(clusterId).value;
+      var found = false;
+      for( x=0; x<list_of_clustertypes.length;x=x+1 ){  
+        if( list_of_clustertypes[x][0] == tmp ){
+          if( list_of_clustertypes[x][1] == "string"){
+            document.getElementById(clusterValue).value = "";
+            document.getElementById(clusterValue).disabled = true;
+            found = true;
+          }
+        }
+      }
+      if( found == false ){
+        document.getElementById(clusterValue).disabled = false;
+      }
+    }
+    
+    
+    // Finds query parameters and makes new search
+    function make_query(){
+      // Get all parameter rows
+      var rows = document.getElementsByClassName("param_row");
+      
+      // Collect search parameters to variable "params"
+      var params = "";
+
+      for( x=0 ; x<rows.length ; x=x+1){
+        var type = rows[x].firstChild.firstChild.getValue("value");
+        var value = rows[x].firstChild.nextSibling.firstChild.getValue("value");
+        var comp = rows[x].firstChild.nextSibling.nextSibling.firstChild.getValue("value");
+        
+        var sparse = rows[x].lastChild.firstChild.checked;
+        var sparse_type = type;
+  
+        // Make sure type or value are not empty
+        if(type != "" && value != ""){
+          if( params != "" ){
+            params = params + "&";
+          }
+          // Add 'q[' before type and ']' after, if doesn't exist already
+          if( type.charAt(0) == 'q' && type.charAt(1) == '[' && type.charAt(type.length - 1) == ']'){
+            // type already has 'q[' at the beginning and ']' at the end, so do nothing
+          }
+          else{
+            if( comp == "" ){
+              type = "q[" + type + "]";  
+            }
+            else if( comp == "min"){
+              type = "qmin[" + type + "]";
+            }
+            else if( comp == "max"){
+              type = "qmax[" + type + "]";
+            }
+            else if( comp == "smaller"){
+              type = "qsmaller[" + type + "]";
+            }
+            else if( comp == "bigger"){
+              type = "qbigger[" + type + "]";
+            }
+          }
+       
+          
+          // Add to parameters string
+          params = params + type + "=" + value;
+          
+          if( sparse == true ){
+            params = params + "&qsparse[" + sparse_type + "]=true";
+          }
+        }   
+      }
+      // Is Sparse all set true
+      if( document.getElementById("sparseAll").checked ){
+        if( params != "" ){
+          params = params + "&";
+        }
+        params = params + "qoption[sparse]=true";
+      }
+      
+      // Is sorting set
+      var sort_by = document.getElementById('sort_option_0').value;
+      if( sort_by != ""){
+      
+        var order = document.getElementById('order_option_0').value;
+        
+        // Add the parameters
+        if( sort_by != "" && order != ""){
+          if( params != "" ){
+            params = params + "&";
+          }        
+          params = params + "qoption[sort_by]=" + sort_by + "&qoption[order]=" + order
+        }
+      }
+      
+      var group_owner = document.getElementById('group_owner_0').value;
+      var group_name =document.getElementById('group_name_0').value;
+      if( group_owner != "" && group_name != "" ){
+        if( params != "" ){
+          params = params + "&";
+        }
+        params = params + "qgroup["+group_owner+"]="+group_name;        
+   
+        var group_owner1 = document.getElementById('group_owner_1').value;
+        var group_name1 =document.getElementById('group_name_1').value;
+        if( group_owner1 != "" && group_name1 != "" ){
+          if( params != "" ){
+            params = params + "&";
+          }
+          params = params + "qgroup["+group_owner1+"]="+group_name1;        
+          
+          var group_owner2 = document.getElementById('group_owner_2').value;
+          var group_name2 =document.getElementById('group_name_2').value;
+          if( group_owner2 != "" && group_name2 != "" ){
+            if( params != "" ){
+              params = params + "&";
+            }
+            params = params + "qgroup["+group_owner2+"]="+group_name2;        
+          }
+        }
+      }
+      
+      // Is available_files_only set true
+      if( document.getElementById("onlyAvailable").checked ){
+        if( params != "" ){
+          params = params + "&";
+        }
+        params = params + "qoption[available_files_only]=true";
+      }
+      
+      // Is show_deleted_files set true
+      if( document.getElementById("showDeletedFiles").checked ){
+        if( params != "" ){
+          params = params + "&";
+        }
+        params = params + "qoption[show_deleted_files]=true";
+      }
+      
+      // Is show_query_processing_time set true
+      if( document.getElementById("queryProcessingTime").checked ){
+        if( params != "" ){
+          params = params + "&";
+        }
+        params = params + "qoption[query_processing_time]=true";
+      }
+    
+      // Is clustering set
+      var clusterType = document.getElementById("cluster_option_0").value;
+      var clusterValue = document.getElementById("cluster_value_0").value;
+      if( clusterType != "" ){
+        if( params != "" ){
+          params = params + "&";
+        }
+        params = params + "qcluster["+clusterType+"]="+clusterValue; 
+        var clusterType1 = document.getElementById("cluster_option_1").value;
+        var clusterValue1 = document.getElementById("cluster_value_1").value;
+        if( clusterType1 != "" ){
+          if( params != "" ){
+            params = params + "&";
+          }
+          params = params + "qcluster["+clusterType1+"]="+clusterValue1; 
+          var clusterType2 = document.getElementById("cluster_option_2").value;
+          var clusterValue2 = document.getElementById("cluster_value_2").value;
+          if( clusterType2 != "" ){
+            if( params != "" ){
+              params = params + "&";
+            }
+            params = params + "qcluster["+clusterType2+"]="+clusterValue2; 
+          }
+        }
+      }
+    
+      if( window.location.pathname == "/search" )
+      {
+        window.location = "/files?"+params;
+      }
+      else{
+        window.location = window.location.pathname+"?"+params;
+      }
+    }
+    
+    // If enter is pressed, make query
+    function checkEnterMakeQuery(e){
+       if (e.keyCode == 13){
+            make_query();
+        }
+    }
+    
+    // Checks if type is valid
+    function validateType(type_id){
+      if(includedInArray(list_of_metadatatypes, document.getElementById(type_id).value)){
+          document.getElementById(type_id).setAttribute("style", "background-color: white");
+      }
+      else{
+          document.getElementById(type_id).setAttribute("style", "background-color: pink");
+      }
+    }
+    
+    // Returns true if object is included in array
+    function includedInArray(arr,obj) {
+      for( y=0; y<arr.length;y=y+1 ){
+         if( arr[y] == obj){
+            return true;
+         }    
+      } 
+      return false;
+    }
+    
+    // Returns index number if object is included in array, if not -> returns -1
+    function includedInArrayAt(arr,obj) {
+      for( y=0; y<arr.length;y=y+1 ){
+         if( arr[y] == obj){
+            return y;
+         }    
+      } 
+      return -1;
+    }
+
+    // Returns index number if object is included in array, if not -> returns -1
+    function includedInArrayAt2(arr,obj) {
+      for( y=0; y<arr.length;y=y+1 ){
+         if( arr[y][0] == obj){
+            return y;
+         }    
+      } 
+      return -1;
+    }
+
+
+    // Get parameters from url and create query form
+    var suggest_hash = new Object();
+    <% if @querystring_for_feed != nil %>    
+        var user_query = "<%= @querystring_for_feed %>";
+        var sliced = new Array();
+        var counter = 0;
+        sliced = user_query.split("&");
+        
+        var sparse_true_params = new Array();
+        var sparse_all_option = false;
+        var available_files_only_option = false;
+        var show_deleted_files = false;
+        var show_query_processing_time = false;
+        var sort_by = "";
+        var order = "";
+        var cluster = new Array();
+        
+        // Save hash for input+suggest_div ID:s
+        for( x=0; x<sliced.length;x=x+1 ){  
+          type_value = sliced[x].split("=");
+          type_sliced = type_value[0];
+          if( type_sliced.match(/^qsparse\[/) && type_sliced.match(/\]$/) ){     
+            if( type_value[1] == "true"){         
+              sparse_true_params.push(type_sliced.slice(8, type_sliced.length-1));
+            }
+          }
+          else if( type_sliced.match(/^qcluster\[/) && type_sliced.match(/\]$/) ){
+            cluster.push( new Array(type_sliced.slice(9, type_sliced.length-1), type_value[1]) );
+          }
+          else if( type_sliced.match(/^qoption\[/) && type_sliced.match(/\]$/) ){
+            if( type_sliced.slice(8, type_sliced.length-1) == "sparse" && type_value[1] == "true" ){
+              sparse_all_option = true;
+            }
+            else if( type_sliced.slice(8, type_sliced.length-1) == "available_files_only" && type_value[1] == "true" ){
+              available_files_only_option = true;
+            }
+            else if( type_sliced.slice(8, type_sliced.length-1) == "sort_by"){
+              sort_by = type_value[1];
+            }
+            else if( type_sliced.slice(8, type_sliced.length-1) == "order"){
+              order = type_value[1];
+            }
+            else if( type_sliced.slice(8, type_sliced.length-1) == "show_deleted_files" && type_value[1] == "true"){
+              show_deleted_files = true;
+            }
+            else if( type_sliced.slice(8, type_sliced.length-1) == "query_processing_time" && type_value[1] == "true"){
+              show_query_processing_time = true;
+            }
+          }
+          else if( type_sliced.match(/^qgroup\[/) && type_sliced.match(/\]$/) && type_sliced.slice(7, type_sliced.length-1) != "" && type_value[1] != "" ){
+            if( document.getElementById("group_owner_0").value == "" ){
+              document.getElementById("group_owner_0").setValue( type_sliced.slice(7, type_sliced.length-1) );
+              document.getElementById("group_name_0").setValue( type_value[1] );            
+            }
+            else if( document.getElementById("group_owner_1").value == "" ){
+              document.getElementById("group_owner_1").setValue( type_sliced.slice(7, type_sliced.length-1) );
+              document.getElementById("group_name_1").setValue( type_value[1] );  
+              document.getElementById("group_line_1").setAttribute("style","display:block;")
+            }
+            else if( document.getElementById("group_owner_2").value == "" ){
+              document.getElementById("group_owner_2").setValue( type_sliced.slice(7, type_sliced.length-1) );
+              document.getElementById("group_name_2").setValue( type_value[1] );
+              document.getElementById("group_line_2").setAttribute("style","display:block;")
+            }
+          }
+          // If using old way of querying, sparse was given for all params this way:
+          else if( type_sliced == "sparse"){
+            if( type_value[1] == "true" ){
+              sparse_all_option = true;
+            }
+          }
+          // If using old way of querying, available_files_only was given for all params this way:
+          else if( type_sliced == "available_files_only"){
+            if( type_value[1] == "true" ){
+              available_files_only_option = true;
+            }
+          }
+          // If using old way of querying...
+          else if (type_sliced == "sort_by"){
+            sort_by = type_value[1];
+          }
+          // If using old way of querying...
+          else if(type_sliced == "rank"){
+            rank = type_value[1];
+          }
+          // If using old way of querying...
+          else if(type_sliced == "show_deleted_files"){
+            if ( type_value[1] == "true"){
+              show_deleted_files = true;
+            }
+          }
+          // If using old way of querying...
+          else if(type_sliced == "query_processing_time"){
+            if ( type_value[1] == "true"){
+              show_query_processing_time = true;
+            }
+          }
+          else{
+            var comp_i = 0;
+            if( type_sliced.match(/^qmin\[/) && type_sliced.match(/\]$/)){
+              type_sliced = type_sliced.slice(5, type_sliced.length-1)
+              comp_i = 1;
+            }
+            
+            else if( type_sliced.match(/^qmax\[/) && type_sliced.match(/\]$/)){
+              type_sliced = type_sliced.slice(5, type_sliced.length-1)
+              comp_i = 2;
+            }
+            else if( type_sliced.match(/^qsmaller\[/) && type_sliced.match(/\]$/)){
+              type_sliced = type_sliced.slice(9, type_sliced.length-1)
+              comp_i = 3;
+            }
+            else if( type_sliced.match(/^qbigger\[/) && type_sliced.match(/\]$/)){
+              type_sliced = type_sliced.slice(8, type_sliced.length-1)
+              comp_i = 4;
+            }
+            else if( type_sliced.match(/^qequal\[/) && type_sliced.match(/\]$/)){
+              type_sliced = type_sliced.slice(7, type_sliced.length-1)
+              comp_i = 0;
+            }                        
+            else if( type_sliced.match(/^q\[/) && type_sliced.match(/\]$/)){
+              type_sliced = type_sliced.slice(2, type_sliced.length-1)
+            }
+            
+            
+            
+            
+            
+            add_param_line(type_sliced, type_value[1], "type_input_"+counter, "suggest_div_"+counter, false, "sparse_id_"+counter, "comp_id"+counter, comp_i);
+            suggest_hash["type_input_"+counter] = "suggest_div_"+counter;
+            validateType("type_input_"+counter);
+            counter = counter+1;
+          }
+        }
+
+        // Set cluster options
+        for( z=0; z < cluster.length; z=z+1 ){
+          console.log("EKAN KERRAN");
+          var clustType = document.getElementById("cluster_option_"+z);
+          var clustVal = document.getElementById("cluster_value_"+z);
+          var indexAt = includedInArrayAt2(list_of_clustertypes, cluster[z][0]);
+          if( indexAt != -1 ){
+            clustType.selectedIndex=indexAt+1;
+            clustVal.setAttribute("value", cluster[z][1]);
+          }
+          if( z == 1 || z == 2){
+            show_new_cluster_line();
+          }
+        }
+
+        // Go through sparse true params, and set them true on the web-ui
+        for( z=0; z < sparse_true_params.length; z=z+1){
+          var els = document.getElementsByName("sparse_"+sparse_true_params[z]);
+          if( els.length > 0 ){
+            els[0].parentNode.lastChild.setAttribute("checked", "checked");
+          }          
+        }
+        
+        // Set sparse all option to true (or leave it to false)
+        if( sparse_all_option == true){
+          document.getElementById("sparseAll").setAttribute("checked", "checked");
+        }
+        
+        // Set available_files_only_option to true (or leave it to false)
+        if( available_files_only_option == true){
+          document.getElementById("onlyAvailable").setAttribute("checked", "checked");
+        }
+        
+        // Set show_deleted_files to true (or leave it to false)
+        if( show_deleted_files == true){
+          document.getElementById("showDeletedFiles").setAttribute("checked", "checked");
+        }
+        
+        // Set available_files_only_option to true (or leave it to false)
+        if( show_query_processing_time == true){
+          document.getElementById("queryProcessingTime").setAttribute("checked", "checked");
+        }
+        
+        // Set sorting order (or leave it to default)
+        if( sort_by != "" ){
+          // go through sort_by parameters
+          sort_splitted = sort_by.split("+");
+          order_splitted = order.split("+");
+          //for( x=0; x<sort_splitted.length;x=x+1 ){
+          for( x=0; x<1;x=x+1 ){
+            var indexAt = includedInArrayAt(list_of_sort_types, sort_splitted[x]);
+            if( indexAt != -1 )
+            {
+              // Sort type was found. Now set it on the form
+              document.getElementById("sort_option_"+x).selectedIndex=indexAt+1;
+              
+              // Set rank order also?
+              if( order_splitted.length >= x ){
+                if( order_splitted[x] == "asc" ){
+                  document.getElementById("order_option_"+x).selectedIndex=1;
+                }
+                // "desc" doesn't need to be checked, since it is by default
+              }
+            }
+          }
+        }
+        
+    <% else %>         
+      
+      add_new_param_line();
+      
+    <% end %>
+
+
+
+
+
+// Event listener for search type input suggestions
+window.addEventListener ?
+  window.addEventListener('load', startSuggest, false) :
+  window.attachEvent('onload', startSuggest);
+</script>

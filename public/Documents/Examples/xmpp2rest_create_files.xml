@@ -1,0 +1,41 @@
+<?xml version="1.0" ?> 
+
+<xmpp2rest>
+  <method>CREATE</method>
+  <user username="ollipolli">
+    <device devicename="my_n8">
+    
+      <files>
+      
+        <!-- compulsory -->
+        <commit_hash>51a1c882cf59e0f922fa7909f91e27467ca8e707</commit_hash>
+        
+        <!-- pre_commit-hash is compulsory allways, but not on the first commit when there is no previous commits -->
+   <prev_commit_hash>51a1c882cf59e0f922fa7909f91e27467ca8e706</prev_commit_hash>    
+        
+        <!-- optional -->
+        <location>
+          <latitude>61.5</latitude>
+          <longitude>23.75</longitude>
+        </location>
+            
+        <!-- compulsory -->
+        <file fullpath="/foobar.txt">
+          
+          <path>/</path>  
+          <filename>foobar.txt</filename>
+          <filedate>15:34:32 2010-07-20</filedate>
+          <filetype>text/plain</filetype>
+          <filesize>10303</filesize>
+          <version_hash>51a1c882cf59e0f922fa7909f91e27467ca8e750</version_hash>
+      
+          <file_status>cached</file_status>
+          <version num="0"/>
+          
+        </file>  
+      </files>
+    </device>
+  </user>
+</xmpp2rest>
+
+

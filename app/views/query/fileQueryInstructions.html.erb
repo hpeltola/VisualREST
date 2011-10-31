@@ -1,0 +1,167 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Making file queries</h1>
+
+<h2>Query</h2>
+<p>Query consists of key-value parameter pairs. <br />
+Without search parameters, query will return all allowed files. <br />
+Queries can be created and tested with <a href='/files'>search files form</a></p>
+
+<p>
+<h4>Parameter syntax for basic usage:</h4>
+<ul>
+  <code>q[key]=value</code>
+</ul>
+</p>
+
+<h4>All possible parameter syntaxes:</h4>
+
+<ul>
+  <li><code>qoption[key]=value</code></li>
+  <li><code>qsparse[key]=value</code></li>
+  <li><code>qgroup[username]=groupname</code></li>
+  <li><code>qmin[key]=value</code></li>
+  <li><code>qmax[key]=value</code></li>
+  <li><code>qsmaller[key]=value</code></li>
+  <li><code>qbigger[key]=value</code></li>
+</ul>
+
+
+<br />
+<h2>q[key]=value</h2>
+<h4>Possible keys:</h4>
+<ul>
+  <li><b>user</b> - Can be multiple users, separetaed by +</li>  
+  <li><b>filename</b> - Part or full filename</li>
+  <li><b>type</b> - Search by filetype</li>
+  <li><b>size</b> - Search by filesize</li>
+  <li><b>created_at</b> - Search by file creation date</li>
+  <li><b>modified_at</b> - Search by file modification date</li>
+</ul>
+
+Key can also be user added metadatatype (listed <a href='/metadatatypes'>here</a>), such as <b>tag</b> or <b>city</b>
+
+<h4>Values:</h4>
+Values are either: <b>string</b>, <b>number</b>, <b>date</b> or <b>datetime</b>.
+
+<ul>
+  <li><b>string</b> - letters or numbers</li>
+  <li><b>number</b> - for file size integer, for user added metadatas float</li>
+  <li><b>date</b> - { yyyy-mm-dd | yyyy-mm | yyyy }</li>
+  <li><b>datetime</b> - { yyyy-mm-dd nn:nn:nn }</li>
+</ul>
+
+
+<h4>Example:</h4>
+Search files that have been created in the year 2010 and has been tagged with 'test', the query would be:
+  <br /><br /><img src="/Documents/example_query.jpg" alt="example query" />
+
+
+<h2>qmin[key]=value</h2>
+Can be used for numbers, dates and datetimes.
+
+<h4>Example:</h4>
+Search for files created in february 2011 or later.
+  <br /><br /><img src="/Documents/example_qmin.jpg" alt="example qmin" />
+  
+<h2>qmax[key]=value</h2>
+Can be used for numbers, dates and datetimes.
+
+<h4>Example:</h4>
+Search for files created in february 2011 or before.
+<ul><li><code>http://visualrest.cs.tut.fi/files?qmax[created_at]=2011-02</code></li></ul>
+
+
+<h2>qsmaller[key]=value</h2>
+Can be used for numbers, dates and datetimes.
+
+<h4>Example:</h4>
+Search for files created before february 5th, 2011.
+<ul><li><code>http://visualrest.cs.tut.fi/files?qsmaller[created_at]=2011-02-05</code></li></ul>
+
+<h2>qbigger[key]=value</h2>
+Can be used for numbers, dates and datetimes.
+
+<h4>Example:</h4>
+Search for files created after 2010.
+<ul><li><code>http://visualrest.cs.tut.fi/files?qbigger[created_at]=2010</code></li></ul>
+
+<br /> Files with rank bigger than 10
+<ul><li><code>http://visualrest.cs.tut.fi/files?qbigger[rank]=10</code></li></ul>
+
+
+
+
+
+
+
+
+
+<br /><br />
+<h2>qoption[key]=value</h2>
+Options to the query. Possible keys and values:
+<ul>
+  <li><b>sort_by</b> - [ created_at | modified_at | size | rank | user | device | path | filename ]</li>
+  <li><b>order</b> - [ asc | desc ]</li>
+  <li><b>available_files_only</b> - [ true ]</li>
+  <li><b>show_deleted_files</b> - [ true ]</li>
+  <li><b>query_processing_time</b> - [ true ]</li>
+  <li><b>sparse</b> - [ true ] - Sets sparse true for all parameters</li>
+</ul>
+
+<h4>Example:</h4>
+Sort query results by rank, in descending order. Also show query processing time.
+  <br /><br /><img src="/Documents/example_qoption.jpg" alt="example qoption" />
+
+
+<br /><br />
+<h2>qsparse[key]=value</h2>
+<p>If sparse is set true for metadatatype, files that don't have that metadatatype are not removed from search results.</p>
+
+<p>By default sparse is set false. In this normal case if you are searching for 'city' 'Tampere', all files that don't have metadatatype 'city', are removed from search results.</p>
+
+<h4>Example:</h4>
+Search for 'city' 'tampere'. Get all files that have metadatatype 'city' set 'tampere' and also all files that don't have metadatatype 'city'
+  <br /><br /><img src="/Documents/example_qsparse.jpg" alt="example qsparse" />
+  
+
+<br /><br />
+<h2>qgroup[username]=groupname</h2>
+Query all available files in a group. Username is the owner of the group. Multiple groupnames can be given, separated by '+' or ' '.
+
+<h4>Example:</h4>
+Search for all available files that users in john's groups called friends and family have.
+  <br /><br /><img src="/Documents/example_qgroup.jpg" alt="example qgroup" />
+
+
+
+
+<br /><br />
+<h2>qcluster[key]=value or qcluster[key]</h2>
+Clusters the search results. Clustering can be done in multiple dimensions by giving different clustering parameter (metadata key) for each dimension. When using this parameter
+server automatically generates a collage of thumbnails of the clustered files. This, however, can take bit of time and currently requires some refreshing of the browser 
+window while the collages are made in the background. 
+
+<br /><br />
+
+The clusters are formet by giving ranges. For exmple for date types the value is always given in seconds, 
+and for numeric metadatatypes the ranges are given in floats. Strings cannot have ranges, they are always
+regarded as exact match.
+
+
+
+<h4>Example 1:</h4>
+Figure bellow illustrates how the search results could be clustered in two dimensions: rank and created_at. 
+White boxes are clusters, and the number inside tells how many results there are in the cluster.
+The range for created_at in this example is 200 seconds and for rank 2 rank values.
+
+<br /><br /><img src="/Documents/clustering.png" alt="clustering example" />
+
+<h4>Example 2:</h4>
+For example our hardware crash on amazon forms <a href="http://visualrest.cs.tut.fi/files?qmin[created_at]=2000&qcluster[created_at]=3000000">two clusters</a>.
+
+

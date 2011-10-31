@@ -1,0 +1,9 @@
+
+<?xml version="1.0" ?> 
+
+<xmpp2rest>
+  <method>CREATE</method>
+  <metadata metadata_type="faces"/>
+</xmpp2rest>
+
+

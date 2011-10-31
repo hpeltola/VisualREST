@@ -1,0 +1,56 @@
+<!ELEMENT xmpp2rest (method,(user|metadata))>
+<!ELEMENT method  (#PCDATA)>
+
+<!-- user -->
+<!ELEMENT user  ((real_name,password)|group|device)?>
+<!ELEMENT real_name  (#PCDATA)>
+<!ELEMENT password  (#PCDATA)>
+
+<!-- group -->
+<!ELEMENT group  (allow|deny|user)>
+
+
+<!-- device -->
+<!ELEMENT device  ((dev_type,password)|(files?,online?)|filerights)>
+<!ELEMENT dev_type  (#PCDATA)>
+
+<!ELEMENT online  (status*)>
+<!ELEMENT status  (location|(uploading_file,(uploading_file_hash|version_hash)))> <!-- currently status only can contain #PCDATA and location-element -->
+
+<!-- Notice that commit_hash is required when adding files-->
+<!ELEMENT files  (commit_hash?,prev_commit_hash?,location?,file*)>
+<!ELEMENT prev_commit_hash  (#PCDATA)>
+<!ELEMENT commit_hash  (#PCDATA)>
+<!ELEMENT location  (latitude, longitude)>
+<!ELEMENT latitude  (#PCDATA)>
+<!ELEMENT longitude  (#PCDATA)>
+<!ELEMENT uploading_file (#PCDATA)>
+<!ELEMENT uploading_file_hash (#PCDATA)>
+
+<!-- Notice that path, filename, filedata, filetype, filesize and version_hash are always required when adding files! -->
+<!ELEMENT file  (path?,filename?,filedate?,filetype?,filesize?,version_hash?,file_status?,version?,metadata*)>
+<!ELEMENT path  (#PCDATA)> <!-- fullpath and path always starts with / -->
+<!ELEMENT filename  (#PCDATA)>
+<!ELEMENT filedate  (#PCDATA)>
+<!ELEMENT filetype  (#PCDATA)>
+<!ELEMENT filesize  (#PCDATA)>
+<!ELEMENT version_hash  (#PCDATA)>
+<!ELEMENT file_status  (#PCDATA)>
+<!ELEMENT version  (#PCDATA)>
+<!ELEMENT metadata  (#PCDATA)>
+
+<!-- filerights -->
+<!ELEMENT filerights  (public|groups)>
+<!ELEMENT allow EMPTY>
+<!ELEMENT deny EMPTY>
+<!ELEMENT public (allow|deny)>
+<!ELEMENT groups (group*)>
+
+<!ATTLIST user username CDATA #REQUIRED>
+<!ATTLIST group groupname CDATA #REQUIRED>
+<!ATTLIST device devicename CDATA #REQUIRED>
+<!ATTLIST file fullpath CDATA #REQUIRED> <!-- fullpath and path always starts with / -->
+<!ATTLIST metadata metadata_type CDATA #REQUIRED>
+<!ATTLIST version num CDATA #REQUIRED>
+<!ATTLIST status status_key (uploading_file|device_location) #REQUIRED>
+<!ATTLIST filerights fullpath CDATA #REQUIRED> <!-- fullpath and path always starts with / -->

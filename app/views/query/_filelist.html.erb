@@ -1,0 +1,46 @@
+<% puts "Query result, File count: ".background(:red) + filelist.size.to_s %>
+<div class="files">
+  <% id = 0%>
+  
+  
+  
+  <% filelist.each do |file_metadata| %>
+
+  	<% if id != file_metadata.device_id %>
+   		<% id = file_metadata.device_id %>
+	 	<% @user = file_metadata.username %>
+	 	<% @dev = file_metadata.dev_name %>
+   	<% end %>
+	
+		<% @user_username = file_metadata.username %>
+		<% @device_dev_name = file_metadata.dev_name %>
+		<% @device_id = file_metadata.device_id.to_s %>
+		<% @file_path = file_metadata.path %>
+		<% @file_name = file_metadata.name %>
+		<% @file_rank = file_metadata.rank %>
+		<% @file_type = file_metadata.filetype %>
+		<% @file_devfile_id = file_metadata.devfile_file_id %>
+		<% @file_privatefile = file_metadata.privatefile %>
+		<% @blob_id = file_metadata.blob_id %>
+		<% @blob_hash = file_metadata.blob_hash %>
+		<% @blob_size = file_metadata.size %>
+		<% @blob_version = file_metadata.version %>
+		<% @blob_filedate = file_metadata.filedate %>
+		<% @file_created_at = file_metadata.devfiles_created_at %>
+		<% @blob_modified_at = file_metadata.blobs_updated_at %>
+		<% @blob_uploaded = file_metadata.uploaded %>
+		<% @blob_thumbnail_name = file_metadata.thumbnail_name %>
+		<% @blob_predecessor_id = file_metadata.predecessor_id %>
+		<% @blob_follower_id = file_metadata.follower_id %>
+    <% @fullpath = (@file_path + @file_name.gsub(/[\s]/, '%20'))[1..-1] %>
+    <% @file_uri = '/user/' + @user_username + '/device/' + @device_dev_name + '/files/' + @fullpath %>
+    
+	  <div class="<%= cycle('odd', 'even') %>" id="<%= @file_devfile_id %>">
+        <%= render :partial => "file" %>
+    </div>
+	
+	
+	
+  <% end %>
+  
+</div>

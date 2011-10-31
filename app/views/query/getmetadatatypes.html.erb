@@ -1,0 +1,18 @@
+<h1>List of metadatatypes</h1>
+<table class="metadatatypes" border="1">
+  <% @results.each do |types| %> 
+    <tr>
+      <td>
+        <%=  types.name  %> (<%=  types.value_type  %>)
+      </td>
+    </tr>
+  <% end %>
+</table>
+<h1>Value types</h1>
+<ul>
+  <li><b>string</b></li>
+  <li><b>float</b> - [123 | -123 | 123.12 | -123.12 ]</li>
+  <li><b>date</b> -  [ {yyyy-mm-dd} | {yyyy-mm} | {yyyy} ]</li>
+  <li><b>datetime</b> - [ yyyy-mm-dd hh:mm:ss ] - [e.g. 2011-06-16 14:48:03]</li>
+</ul>
+  

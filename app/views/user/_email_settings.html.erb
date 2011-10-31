@@ -1,0 +1,122 @@
+<div id="settings_top">
+<span>Email settings</span>
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/emailSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Manage your emails addresses</span>
+<%else%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/emailSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+  
+  
+<fieldset>
+  <legend>Your emails:</legend>
+  <table>
+    <tr>
+      <th>Email</th>
+      <th>Mail username</th>
+      <th>Mail server</th>
+      <th>Mail port</th>
+      <th>Encryption</th>
+      <th>Active checking</th>
+      <th>Container</th>
+    </tr>  
+  <%editID=0%>
+  <% @userEmails.each do |x| %>
+    <tr>
+      <td><div id="email_<%=editID%>"><%= x.email %></div></td>
+      <td><%= x.mail_username %></td>
+      <td><%= x.mail_server %></td>
+      <td><%= x.mail_port %></td>
+      <td><% if x.mail_tls_encryption == true %>TLS<%else%>SSL<%end%></td>
+      <td><%= x.mail_checking%><button onclick="emailCheckingChange('email_<%=editID%>')">Change</button></td>
+      <td>
+        <% if x.device_id != nil %> 
+          <% device = Device.find_by_id(x.device_id)%>
+          <% if device != nil%>
+            <%= device.dev_name%>
+          <%end%>
+        <%end%>
+      </td>
+      <td><button onclick="deleteEmail('email_<%=editID%>')">Delete</button></td>
+    </tr>
+    <%editID=editID+1%>
+  <% end %>
+  </table>
+</fieldset>
+
+
+<fieldset onkeypress="checkEnterEmail(event)">
+  <legend>Add new email:</legend>
+  <table>
+    <tr>
+      <td>Email address: </td>
+      <td><input id="input_email" value=""></td>
+    </tr>
+    <tr>  
+      <td>Mail username:</td>
+      <td><input id="input_username" value=""></td>
+    </tr> 
+    <tr>
+      <td>Mail password:</td>
+      <td><input id="input_password" value=""></td>
+    </tr>
+    <tr>
+      <td>Mail server:</td>
+      <td><input id="input_server" value=""></td>
+    </tr>  
+    <tr>
+      <td>Mail server port:</td>
+      <td><input id="input_port" value=""></td>
+    </tr>
+    <tr>
+      <td>Encryption:</td>
+      <td>
+        <select id="input_encryption"> <option>
+          <option value="SSL" selected="selected">TLS/SSL</option>
+          <option value="TLS">None</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Container:</td>
+      <td>
+        <% if @virtualUserDevices.size == 0 %>
+          <span style='color:red'>You need virtual container</span>
+        <% else %>
+          <select id="input_device">
+          <% @virtualUserDevices.each do |x| %>
+            <% if x == 0%>
+              <option value="<%= x.dev_name%>" selected="selected"><%= x.dev_name%></option>
+            <% else%>
+              <option value="<%= x.dev_name%>"><%= x.dev_name%></option>
+            <% end %>
+          <% end %>
+          </select>
+        <% end %>
+      </td>
+    </tr>
+    <tr>
+      <td>Persistent checking:</td>
+      <td><input id="input_checking" type="checkBox"></td>
+    </tr>
+    <tr>
+      <td><button  onclick="addNewEmail('input_email', 'input_username', 'input_password', 'input_server', 'input_port', 'input_checking', 'input_encryption', 'input_device');">Add</button></tr>
+    </tr>
+  </table>
+</fieldset>
+
+
+  
+<%end%>
+  
+  

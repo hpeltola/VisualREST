@@ -1,0 +1,44 @@
+<% if false %><!-- start erb comment -->
+<%= periodically_call_remote(:url => {:controller => 'device', :action => 'checkDeviceStatus', :devices => @device_ids, :image => true }, :frequency => 3, :method => 'post')%>
+<!-- end erb comment --><% end %>
+
+<table class="users">
+	<tr>
+		<th>
+			Online
+		</th>
+		<th>
+			Device name
+		</th>
+		<th>
+			Device type
+		</th>	
+		<th>
+			Files
+		</th>	
+	</tr>
+	<% @results.each do |device| %>
+		<tr class="<%= cycle('odd', 'even')%>">
+			<td>
+				<div class="quitesmall" id='<%= device.id %>_status' align="left">
+					<% if @onlinelist[device.id] %>
+					 <center><img src="<%= "/thumbnails/vR_online_2_32.png" %>" alt="Online" /></center>
+					<% else %>
+					 <center><img src="<%= "/thumbnails/vR_offline_32.png" %>" alt="Offline" /></center>
+					<% end %>
+				</div>
+			</td>
+			<td>
+				<b><%= link_to h(device.dev_name), :controller => 'user', :action => 'deviceSettings', :username => device.username, :devicename => device.dev_name %></b>
+			</td>
+			<td>
+				<%= h(device.dev_type) %>
+			</td>
+			<td>
+				<b><%= link_to 'files', :controller => 'query', :action => 'get', :username => device.username, :devicename => device.dev_name, :what_to_get => 'files' %></b>
+			</td>
+		</tr>
+	<% end %>
+</table>
+
+<p>Online = <img src="<%= "/thumbnails/vR_online_2_32.png" %>" alt="Online" />,  Offline = <img src="<%= "/thumbnails/vR_offline_32.png" %>" alt="Offline" /></p>

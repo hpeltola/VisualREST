@@ -1,0 +1,50 @@
+<%= render :partial => "search_users_form" %>
+
+
+<% if @users and not @users.empty? %>
+
+<br />
+<div class="files">
+  
+  <% @users.each do |user| %>
+    <div class="<%= cycle('odd', 'even') %>" >
+      <table>
+        <tr>
+          <td>
+            <a href="<%=@host%>/user/<%=user.username%>/metadatas/thumbnail"><img src="<%=@host%>/user/<%=user.username%>/metadatas/thumbnail" alt="icon" /></a>
+          </td>
+          <td>
+            <b>Name:</b> <%= user.real_name %><br />
+            <b>Username:</b> <a href="<%=@host%>/user/<%=user.username%>"><%= user.username %></a><br />
+            <% if session[:username] && session[:username] != nil %>
+              <%= linkt_to_edit_user_groups "edit user groups", session[:username], user.id %>
+            <% end %>
+          </td>
+        </tr>
+      </table>
+    </div>
+  <% end %>
+  
+  
+</div>
+
+<% elsif @queryparams[:user] && @queryparams[:user] != "" %>
+No search results.
+<% end %>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

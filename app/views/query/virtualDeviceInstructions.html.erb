@@ -1,0 +1,56 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Virtual device Instructions</h1>
+<p>
+  Virtual device works a bit like normal device, except all content is saved on the server.<br>
+  Content on virtual device is accessible all the time, since the content is stored on the server and doesn't rely on external device being online.<br>
+</p>
+
+<p>
+  Content can be added to virtual device. <br>
+  If content with same name already exists, content will be saved as new version of the content.<br>
+  All versions of content are stored on the server and can be accessed.<br>
+</p>
+
+
+<h2>Adding virtual device</h2>
+
+
+<ul>
+  <li><b>method:</b> PUT</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/device/{devicename}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>dev_type=virtual_container</li>
+    <li>password=users_password</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br>
+  curl -X PUT http://visualrest.cs.tut.fi/user/heikki/device/virtuaalinen1 -F 
+  dev_type=virtual_container -F password=heikki
+</p>
+
+
+<h2>Adding content to virtual device</h2>
+
+
+<ul>
+  <li><b>method:</b> PUT</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/device/{devicename}/files/{filename}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+    <li>upload=filedata</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br>
+  curl -X PUT http://visualrest.cs.tut.fi/user/heikki/device/virtuaalinen1/files/bus.jpg -F 
+  upload=@/home/kayttaja/Kuvat/bus.jpg -F i_am_client=true -F auth_timestamp=1234 -F 
+  auth_hash=f08017093e3bf53bc697664b0e349cb9e7604666
+</p>

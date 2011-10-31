@@ -1,0 +1,27 @@
+
+<?xml version="1.0" ?> 
+
+<xmpp2rest>
+  <method>UPDATE</method>
+  <user username="ollipolli">
+    <device devicename="my_n8">
+      <online>
+        <!--
+        <status status_key="uploading_file">
+          <uploading_file>/joku/juku/foobar.txt</uploading_file>
+          <uploading_file_hash>51a1c882cf59e0f922fa7909f91e27467ca8e756</uploading_file_hash>  
+        </status>
+      -->
+        <status status_key="device_location">
+          <location>
+            <latitude>22.2</latitude>
+            <longitude>33.3</longitude>
+          </location>
+        </status>
+        
+      </online>
+    </device>
+  </user>
+</xmpp2rest>
+
+

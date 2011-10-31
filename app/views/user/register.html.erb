@@ -1,0 +1,30 @@
+<h2>Register</h2>
+<% form_for :user, :html => { :method => :put } do |form| %>
+<fieldset>
+    <legend>
+        Enter Your Details
+    </legend>
+    <%= error_messages_for "user" %>
+    <div class="form_row">
+        <label for="real_name">
+            Real name:
+        </label>
+        <%= form.text_field :real_name, :size => User::REAL_NAME_SIZE, :maxlength => User::REAL_NAME_MAX_LENGTH %>
+    </div>
+    <div class="form_row">
+        <label for="username">
+            Username:
+        </label>
+        <%= form.text_field :username, :size => User::USERNAME_SIZE, :maxlength => User::USERNAME_MAX_LENGTH %>
+    </div>
+    <div class="form_row">
+        <label for="password">
+            Password:
+        </label>
+        <%= form.password_field :password, :size => User::PASSWORD_SIZE, :maxlength => User::PASSWORD_MAX_LENGTH %>
+    </div>
+    <div class="form_row">
+        <%= submit_tag "Register!", :class => "submit" %>
+    </div>
+</fieldset>
+<% end %>

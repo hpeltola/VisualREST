@@ -1,0 +1,129 @@
+<fieldset>
+    <legend>Search contexts:</legend>
+    
+    <div onkeypress="checkEnterForContext(event)">
+      <table>
+        <tr title="Name of the context, or part of the name">
+          <td><b>Contextname:</b></td> <td><input id="contextnameInput" type="text" name="user"></td>
+        </tr>
+        <tr title="Full username of context owner. If the exact username not found, returns an error.">
+          <td><b>Owner name:</b></td> <td><input id="contextOwnerInput" type="text" name="user"></td>
+        </tr>
+      </table>
+      
+      <div id="sort_options_for_context">
+        <b>Sort by:</b>
+    
+        <select id="sort_option_for_context">
+            <option selected></option>
+            <option>date_added</option>
+            <option>date_updated</option>
+            <option>name</option>
+            <option>rank</option>
+        </select>
+        <select id="order_option_for_context">
+          <option>desc</option>
+          <option>asc</option>
+        </select>
+      </div>
+    </div>
+    
+    <button onClick="make_query_for_contexts();" style="float:right">Search</button>
+</fieldset>
+
+
+<script type="text/javascript">
+  
+  // If enter is pressed, make query
+  function checkEnterForContext(e){
+    if (e.keyCode == 13){
+      make_query_for_contexts();
+    }
+  }
+  
+  // Finds query parameters and makes new search
+    function make_query_for_contexts(){
+      // Go through search form and find params
+      var params = "";
+
+      var name = document.getElementById('contextnameInput').value;
+      if( name != "" ){
+        if( params != "" ){
+          params += "&";
+        }
+        params += "name=" + name;
+      }
+      
+      var username = document.getElementById('contextOwnerInput').value;
+      if( username != "" ){
+        if( params != "" ){
+          params += "&";
+        }
+        params += "username=" + username;
+      }
+  
+      var sort = document.getElementById('sort_option_for_context').value;
+      if( sort != "" ){
+        var order = document.getElementById('order_option_for_context').value;
+        if( sort != "" && order != "" ){
+          if( params != "" ){
+            params += "&";
+          }
+          params += "sort_by=" + sort + "&order=" + order;
+        }        
+      }
+  
+      if( window.location.pathname == "/search" )
+      {
+        if( params == ""){
+          window.location = "/contexts";
+        }
+        else{
+          window.location = "/contexts?"+params;          
+        }
+      }
+      else{
+        window.location = window.location.pathname+"?"+params;
+      }
+    }
+  
+    // Get parameters from url
+    <% if @querystring_for_feed != nil %>    
+        var user_query = "<%= @querystring_for_feed %>";
+        
+        var sliced = new Array();
+        sliced = user_query.split("&");
+        for( x=0; x<sliced.length;x=x+1 ){
+          var type_value = sliced[x].split("=");
+          type_sliced = type_value[0];
+          
+          if( type_value[0] == "sort_by"){
+            if( type_value[1] == "date_added" ){
+              document.getElementById("sort_option_for_context").selectedIndex=1;
+            }
+            else if( type_value[1] == "date_updated" ){
+              document.getElementById("sort_option_for_context").selectedIndex=2;
+            }
+            else if( type_value[1] == "name" ){
+              document.getElementById("sort_option_for_context").selectedIndex=3;
+            }
+            else if( type_value[1] == "rank" ){
+              document.getElementById("sort_option_for_context").selectedIndex=4;
+            }
+          }
+          else if( type_value[0] == "order" ){
+            if( type_value[1] == "asc"){
+              document.getElementById("order_option_for_context").selectedIndex=1;
+            }
+          }
+          else if( type_value[0] == "name" ){
+            document.getElementById("contextnameInput").value = type_value[1];            
+          }
+          else if( type_value[0] == "username" ){
+            document.getElementById("contextOwnerInput").value = type_value[1];
+          }
+        }
+   
+    <% end %>
+  
+</script>

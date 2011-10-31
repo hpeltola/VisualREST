@@ -1,0 +1,38 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>User instructions</h1>
+  
+<h2>Add thumbnail for user</h2>
+
+<ul>
+  <li><b>description:</b> Users have default thumbnail. It can be changed with this method.</li>
+  <li><b>method:</b>     POST</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+    <li>thumbnail_data</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br>
+  curl -X POST http://visualrest.cs.tut.fi/user/heikki -F thumbnail_data=@/home/kayttaja/Kuvat/kuva.jpg 
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true
+</p>
+
+<br />
+
+<h2>Get user's thumbnail</h2>
+<ul>
+  <li><b>method:</b>     GET</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/metadatas/thumbnail</li>
+</ul>
+<p>
+  <b>example:</b><br>
+  http://visualrest.cs.tut.fi/user/heikki/metadatas/thumbnail
+</p>

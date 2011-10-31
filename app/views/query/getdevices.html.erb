@@ -1,0 +1,73 @@
+<% if true %><!-- start erb comment -->
+<%= periodically_call_remote(:url => {:controller => 'query', :action => 'checkDeviceStatus', :devices => @device_ids, :image => true }, :frequency => 30, :method => 'post')%>
+<!-- end erb comment --><% end %>
+
+<% if @querystring_for_feed != nil %>
+	<%= auto_discovery_link_tag(:atom, request.url.gsub(/\/devices\?.*$/, "/devices.atom?" + @querystring_for_feed)) %>
+<% else %>
+	<%= auto_discovery_link_tag(:atom, request.url.gsub(/\/devices.*$/, "/devices.atom")) %>
+<% end %>
+<% if not @context.empty? %>
+	<h1>Devices of <%= @context[:user].username %></h1>
+	<% if @querystring != nil %>
+		<b>Query: <%= @querystring %></b><br/>
+	<% end %>
+<% elsif @querystring != nil %>
+	<h1>Query: <%= @querystring %></h1>
+<% end %>
+<br/>
+<% if @nothingfound %>
+	Nothing found.
+<% else %>
+	<%= will_paginate(@results) %>
+	<br/>
+	<%= render :partial => "devicelist" %>
+	<br/>
+	<%= will_paginate(@results) %>
+<% end %>
+
+<span id="virtual">Virtual Container</span><span id="online">Online</span>
+
+
+
+
+
+
+
+
+<!-- The following javascript is used for handling links pressed in "devicelist"  -->
+<script type="text/javascript">
+  
+
+  function removeContent(uri, success_uri, message){
+    
+    var r=confirm(message);
+    if (r==true)
+      {
+            new Ajax.Request(uri, {asynchronous:true, evalScripts:true, method:'delete',
+                    parameters: 'ajax=true&authenticity_token=<%= form_authenticity_token %>',
+                    onSuccess: function(data){ 
+                      if(data.status == 200){
+                        new Ajax.Request(success_uri, {asynchronous:false, evalScripts:true, method:'get', parameters: 'authenticity_token=' + '<%= form_authenticity_token %>'});
+                      }},
+                    onFailure: function(data){
+                        alert(data.responseText);
+                      }
+        });
+      }
+  }
+
+
+
+
+</script>
+
+
+
+
+
+
+
+
+
+

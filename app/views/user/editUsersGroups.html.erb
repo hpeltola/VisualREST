@@ -1,0 +1,74 @@
+<% form_tag( { :action => 'editUsersGroups', :username => session[:username],
+:user => params[:user], :controller => 'user' },
+{ :method => :get }) do %>
+<fieldset>
+    <legend>
+        Search users:
+    </legend>
+    <div class="form_row">
+        <label for="searchterm">
+            Name:
+        </label>
+        <%= text_field_tag :user %>
+    </div>
+    <div class="form_row">
+        <%= submit_tag "Search!", :class => "submit", :name => nil %>
+    </div>
+</fieldset>
+<% end %>
+
+
+
+<% if session[:username] and @users and not @users.empty? %>
+<% form_tag( { :action => 'saveUsersGroups',
+:username => session[:username], :controller => 'user' },
+{ :method => :post }) do %>
+<fieldset>
+    <legend>
+        Search results:
+    </legend>
+    <table class="users" border="0" cellpadding="5" cellspacing="1">
+        <tr class="header">
+            <th>
+                Name
+            </th>
+            <th>
+                Username
+            </th>
+            <% @groups.each do |group| %>
+            <th>
+            	<% how_long = 7%>
+                <% if group.name.length > how_long %>
+				<%= group.name[0,how_long - 2] +".."%>
+                <% else %>
+                <%= group.name %>
+                <%end %>
+            </th>
+			<% end %>
+        </tr>
+        <% j = 0 %>
+        <% @users.each do |user, group_checked| %>
+        <tr class="<%= cycle('odd', 'even') %>">
+            <td>
+                <%= user.real_name %>
+            </td>
+            <td>
+                <%= user.username %>
+            </td>
+            <% i = 0 %>
+            <% @groups.each do |group| %>
+            <td>
+    			<%= check_box "groups[#{user.id}]", group.id, options = {:checked => group_checked[group.id]} %>
+	        </td>
+            <% i = i + 1 %>
+            <% end %>
+        </tr>
+        <% j = j+1 %>
+        <% end %>
+    </table>
+    <div class="form_row">
+        <%= submit_tag "Save", :class => "submit", :name => nil %>
+    </div>
+</fieldset>
+<% end %><!-- form -->
+<% end %><!-- if sess.. -->

@@ -1,0 +1,23 @@
+<h2>Add new group:</h2>
+<% form_for :group, :url => { :controller => 'user', :username => session[:username], :action => "addGroup" }, :html => { :method => :put } do |form| %>
+<fieldset>
+    <legend>
+        Enter Group Details
+    </legend>
+    <%= error_messages_for(:group) %>
+    <div class="form_row">
+        <label for="name">
+            Group name:
+        </label>
+        <%= form.text_field :name, :size => Group::NAME_SIZE, :minlength => Group::NAME_MIN_LENGTH, :maxlength => Group::NAME_MAX_LENGTH %>
+    </div>
+	
+	<div class="form_row">
+        <%= form.hidden_field :user_id, :value => session[:user_id] %>
+    </div>
+	
+    <div class="form_row">
+        <%= submit_tag "Add!", :class => "submit" %>
+    </div>
+</fieldset>
+<% end %>

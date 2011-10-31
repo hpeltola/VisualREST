@@ -1,0 +1,833 @@
+body {
+  font-family: sans-serif;
+  background: #e9e9e9;
+  margin: 0;
+  text-align: center;
+}
+
+#whole_page {
+  width: 50em;
+  margin: auto;
+  padding: 0;
+  text-align: left;
+  border-width:  0 1px 1px 1px;
+  border-color:  white;
+  border-style:  solid;
+}
+
+#header {
+  color: #878787;
+  background: white; /* No "ruby" defined in HTML color names! */
+  font-size: 24pt;
+  padding: 0.25em;
+  margin-bottom: 0;
+}
+
+#nav {
+  color: white;
+  font-size: 12pt;
+  /*font-weight: bold;*/
+  background: black;/*#3550a1;*/
+  padding: 0.5em;
+}
+
+#nav a, #nav a:visited  {
+  color: white;/*#f26a23;*/
+  text-decoration: none;
+}
+
+#nav a:hover {
+  color: blue;/*#f26a23;
+  border-bottom: 2px dotted black;*/
+}
+
+#content {
+  height: 100%;
+  background:  white;
+  padding: 1em;
+}
+
+#content h1 {
+  color: gray;/*#f26a23;*/
+  font-size: 18pt;
+}
+
+#content h2 {
+  color: #878787;
+}
+
+.quitesmall {
+  color: #100010;
+  font-size: 9pt;
+  font-weight: normal:
+}
+
+.verysmall {
+  color: #100010;
+  font-size: 8pt;
+  font-weight: normal:
+}
+
+div.loading {
+  background: url(images/ajax-loader.gif) no-repeat;
+  text-indent: -999px;
+}
+
+
+/* Hack to get IE to display fieldset/legend correctly */ 
+html fieldset { 
+  position: relative; 
+} 
+/*
+html legend { 
+  position:absolute; 
+  top: -1em; 
+  left: .5em; 
+}*/ 
+
+html fieldset { 
+  position: relative; 
+  margin-top:1em; 
+  padding-top:2em; 
+  padding-bottom: 2em; 
+} 
+
+/* Form Styles */ 
+fieldset { 
+  background: white; 
+} 
+
+legend { 
+  color: white; 
+  background: gray;/*#f26a23;*/ 
+  padding: .4em 1em; 
+} 
+
+label { 
+  width: 10em; 
+  float: left; 
+  text-align: right; 
+  margin-right: 0.2em; 
+  display: block; 
+} 
+
+.form_row { 
+  white-space: nowrap; 
+  padding-bottom: .5em; 
+} 
+
+.submit { 
+  margin-left: 15em; 
+} 
+
+
+.debug_dump {
+  text-align: left;
+  border-top: 1px dashed black;
+  background: #ccc;
+  margin: 0;
+  padding: 0.5em;
+
+}
+
+/* Debug Style */
+
+#debug {
+  margin-top: 1em;
+  margin-left: auto;
+}
+#debug a, #debug a.visited {
+  text-decoration: none;
+  color: maroon;
+}
+fieldset.debug_info {
+  text-align: left; 
+  margin: 1em; 
+  background: #eee;
+}
+
+
+/* Error Reporting Styles */ 
+.fieldWithErrors { 
+  margin: 2px; 
+  padding: 2px; 
+  background-color: red; 
+  display: table; 
+} 
+
+#errorExplanation { 
+  border: 2px solid red; 
+  padding: 7px; 
+  padding-bottom: 12px; 
+  margin-bottom: 20px; 
+  background-color: #f0f0f0; 
+} 
+
+#errorExplanation h2 { 
+  text-align: left; 
+  font-weight: bold; 
+  padding: 5px 5px 5px 15px; 
+  font-size: 12pt; 
+  margin: -7px; 
+  background-color: #c00; 
+  color: #fff; 
+} 
+
+#errorExplanation p { 
+  color: #333; 
+  margin-bottom: 0; 
+  padding: 5px; 
+} 
+
+#errorExplanation ul li { 
+  font-size: 11pt; 
+  list-style: square; 
+} 
+
+/* Flash notice Style */
+#notice {
+  border: 1px solid green;
+  padding: 1em;
+  margin: 1em;
+  margin-bottom: 2em;
+  background-color: lightgrays;
+  font: bold smaller sans-serif;
+  
+}
+
+table.users {
+  background: #fff;
+  margin-left: 2em;
+  
+}
+
+table.users td.bottom {
+  border-top: 1px solid #999;
+  padding-top: 10px;
+  
+}
+
+table.users th {
+  color: white;
+  background: gray;/*#f26a23;*/
+  font-weight: normal;
+  
+  
+}
+
+table.users th a {
+  color: white;
+  text-decoration: underline;
+}
+
+
+table.users tr.even {
+  background: #ddd;
+}
+
+table.users tr.odd {
+  background: #eee;
+}
+
+table.files tr.even {
+  background: #ddd;
+}
+
+table.files tr.odd {
+  background: #eee;
+}
+
+
+/* Autosuggest styles */
+
+.suggest {
+    z-index: 3;
+    position: absolute;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCFF;
+    font-size: 90%;
+    width: 200px;
+}
+.suggest div {
+    display: block;
+    width: 200px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.suggest div.select{ /* keydown, keyup */
+    color: #FFFFFF;
+    background-color: #3366FF;
+}
+.suggest div.over{ /* mouse over */
+    background-color: #99CCFF;
+}
+
+
+
+
+/* front page news feed */
+#addnews a {
+  margin-top: 170px;
+  font-size: 80%;
+  color: #3550a1;
+  text-decoration:none;
+}
+#addnews a:visited {
+  border-bottom: 0.5px solid black;
+  color: #3550a1;
+  text-decoration:none;
+}
+#addnews a:hover {
+  text-decoration:underline;
+}
+div.news div.odd {  
+    margin-top: 6px;  
+    padding: 14px;  
+    background: #eee;
+    border-radius: 12px;
+    font-size: 90%;  
+}
+div.news div.even {  
+    margin-top: 6px;  
+    padding: 14px;  
+    background: white;  
+    border-radius: 12px;
+    font-size: 90%;  
+}
+div.news div span#newsid {
+  font-size: 80%;
+  color:gray;
+}
+
+
+
+
+/* Settings */
+#settings_top {
+  border-bottom-style:solid;
+  border-color:#3550a1;
+  border-width: 1px;
+}
+#settings span.right a{
+  float: right;
+  font-size: 80%;
+  color: #3550a1;
+  text-decoration:none;
+}
+#settings span.right a:visited {
+  border-bottom: 0.5px solid black;
+  color: #3550a1;
+  text-decoration:none;
+}
+#settings span.right a:hover {
+  text-decoration:underline;
+}
+
+#settings span.subtext {
+  font-size: 70%;
+  color:gray;
+}
+
+
+.form_row_2 input {
+  position: relative;
+  left: 30px;
+  color:red;
+}
+
+
+
+
+
+/* testing: */
+
+  #nav2, #nav2 ul { /* all lists */
+    z-index: 1;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    float : left;
+    width : 4em;
+  }
+  
+  #nav2 li { /* all list items */
+    position : relative;
+    float : left;
+    line-height : 1.25em;
+    margin-bottom : -1px;
+    width: 4em;
+  }
+  
+  #nav2 li ul { /* second-level lists */
+    position : absolute;
+    left: -999em;
+    margin-left : 2.7em;  /* Kuinka kaukana ala boxi on boxista leveyssuunnassa*/
+    margin-top : -2.35em; /* Kuinka kaukana ala boxi on boxista korkeussuunnassa*/
+  }
+  
+  /********* ekan tason linkit **************/
+  #nav2 li a {
+    width: 1.5em;   /* ei vaikuta mihkään? */
+    w\idth : 1.8em;  /* boksin leveys */
+    display : block;
+ /*   color : #f26a23;*/
+    font-weight : bold;
+    text-decoration : none;
+/*    background-color : white;*/
+/*   border : 1px solid black;*/
+    padding : 0 0.5em;
+  }
+  
+  #nav2 li a:hover {
+    color : white;
+/*    background-color : black;*/
+  }
+  
+  
+  /********* toisen tason linkit **************/
+  
+  #nav2 li ul li a{
+    z-index: 2;
+    width: 10em;   /* ei vaikuta mihkään? */
+    w\idth : 10em;  /* boksin leveys */
+    display : block;
+    color : black;
+    font-weight : bold;
+    text-decoration : none;
+    background-color : white;
+    border : 1px solid #3550a1;
+    padding : 0 0.5em;
+  }
+  
+  #nav2 li ul li a:hover {
+    color : white;
+    background-color : black;
+  }
+  
+  #nav2 li ul li a.first_a{
+    color : white;/*#f26a23;*/
+    background-color : gray;/*#3550a1;*/
+  }
+  
+  
+  
+  
+  /****************/
+  
+  #nav2 li ul ul { /* third-and-above-level lists */
+    left: -999em;
+  }
+  
+  /*  Multilevel stuff: */
+  #nav2 li:hover ul ul, #nav2 li:hover ul ul ul, #nav2 li.sfhover ul ul, #nav2 li.sfhover ul ul ul {
+    left: -999em;
+  }
+  
+  #nav2 li:hover ul, #nav2 li li:hover ul, #nav2 li li li:hover ul, #nav2 li.sfhover ul, #nav2 li li.sfhover ul, #nav2 li li li.sfhover ul { /* lists nested under hovered list items */
+    left: auto;
+  }
+
+
+/*  User added metadata in filelist */
+div.metadatas{
+    position:absolute;
+
+    z-index: 3;
+    background-color : #00FFFF;
+    min-height: 100px;
+    min-width: 150px;
+}
+
+
+/* filelist */
+
+
+div.files div.odd {  
+    margin-top: 6px;  
+    padding: 14px;  
+    background: #eee;
+    border-radius: 12px;
+    -moz-border-radius: 12px;
+    font-size: 90%;
+    height:140px; 
+}
+div.files div.even {  
+    margin-top: 6px;  
+    padding: 14px;  
+    background: white;  
+    border-radius: 12px;
+    -moz-border-radius: 12px;
+    font-size: 90%;
+    height:140px;  
+}
+
+div.files div span.file_left{
+  position:relative;
+  left: 0px;
+}
+
+div.files div span.file_center{
+  font-size: 80%;
+  color:red;
+  position:relative;
+  left: 100px;
+}
+
+div.files div span.version_controllers{
+  float:right;
+  position:relative;
+  top:-135px;
+  width:180px;
+  text-align:right;
+}
+
+div.files div span.file_right{
+  position:relative;
+  left: 180px;
+  top: -90px;
+  float:right;
+}
+
+img.backg {
+  width: 110px;
+  height: 110px;
+  border:0px;
+  -webkit-box-shadow: 3px 3px 7px #777;
+  -moz-box-shadow: 3px 3px 7px #777;
+  box-shadow: 3px 3px 7px #777;
+}
+
+
+
+
+
+
+/* General warning box for messages*/
+div#red-box 
+{
+  border-style:dashed;
+  border-width:2px;
+  border-color: red;
+  background: #ff8787;
+  opacity: .7;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 25px 25px 25px 25px;
+  font-weight:bold;
+  font-size: 90%;
+}
+
+
+
+/* General message box for messages*/
+div#green-box 
+{
+  border-style:dashed;
+  border-width:2px;
+  border-color: green;
+  background: #8bd58b;
+  opacity: .7;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 25px 25px 25px 25px;
+  font-weight:bold;
+  font-size: 90%;
+}
+
+
+
+div#blue-box 
+{
+  border-style:dashed;
+  border-width:2px;
+  border-color: #00008b;
+  background: #bfc0ff;
+  opacity: .7;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 25px 25px 25px 25px;
+  font-weight:bold;
+  font-size: 90%;
+}
+
+div.yellow-box 
+{
+  border-style:dashed;
+  border-width:2px;
+  border-color: #ffc500;
+  background: #ffffa0;
+  opacity: .7;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 25px 25px 25px 25px;
+  font-weight:bold;
+  font-size: 90%;
+}
+
+
+/*  Device list */
+div#device_list {
+  position: relative;
+}
+
+#online {
+  border-color: green;
+  background: #8bd58b;
+  opacity: .8;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 10px 10px 10px 10px;
+  font-size: 60%;
+  position: relative;
+  left: 20px;
+}
+
+div.device_online {
+  border-style:solid;
+  border-width:0px;
+  border-color: green;
+  background: #8bd58b;
+  opacity: .8;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 0px 15px 25px 25px; /*t,r,b,l*/
+  font-weight:bold;
+  font-size: 90%;
+  margin:10px 0px;
+  position: relative;
+  height: 30px;
+}
+
+#virtual {
+  border-color: #212275;
+  background: #bfc0ff; /*#cccdff ei oppacity*/
+  opacity: .8;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 10px 10px 10px 10px;
+  font-size: 60%;
+}
+
+
+div.device_type_virtual {
+  border-style:solid;
+  border-width:0px;
+  border-color: #212275;
+  background: #bfc0ff;
+  opacity: .8;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 0px 15px 25px 25px; /*t,r,b,l*/
+  font-weight:bold;
+  font-size: 90%;
+  margin:10px 0px;
+  position: relative;
+  height: 30px;
+}
+
+div.device_odd {
+  border-style:solid;
+  border-width:0px;
+  background: #eee;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 0px 15px 25px 25px; /*t,r,b,l*/
+  font-weight:bold;
+  font-size: 90%;
+  margin:10px 0px;
+  position: relative;
+  height: 30px;
+}
+
+div.device_even {
+  border-style:solid;
+  border-width:0px;
+  background: white;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  padding: 0px 15px 25px 25px; /*t,r,b,l*/
+  font-weight:bold;
+  font-size: 90%;
+  margin:10px 0px;
+  position: relative;
+  height: 30px;
+}
+
+
+
+div#device_list div span#dev_name {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+}
+
+
+
+
+div#device_list div span#dev_delete {
+  position: absolute;
+  right: 300px;
+  top: 20px;
+}
+
+
+div#device_list div span#dev_clearfiles {
+  position: absolute;
+  right: 170px;
+  top: 20px;
+}
+
+div#device_list div span#dev_settings {
+  position: absolute;
+  right: 80px;
+  top: 20px;
+}
+
+div#device_list div span#dev_files {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
+
+
+div#device_list div span a{
+  color: blue;
+  text-decoration:none;
+}
+div#device_list div span a:visited {
+  border-bottom: 0.5px solid black;
+  color: blue;
+  text-decoration:none;
+}
+div#device_list div span a:hover {
+  text-decoration:underline;
+}
+
+
+/* Context list */
+div.context_list div.odd{
+  background: #eee;
+}
+
+div.context_list div.even{
+  background: #ddd;
+}
+
+
+
+
+
+
+
+/* clustered_results */
+
+
+div.clustered_results div.odd {  
+    margin-top: 6px;  
+    padding: 14px;  
+    background: #eee;
+    border-radius: 12px;
+    -moz-border-radius: 12px;
+    height:340px; 
+}
+div.clustered_results div.even {  
+    margin-top: 6px;  
+    padding: 14px;  
+    background: white;  
+    border-radius: 12px;
+    -moz-border-radius: 12px;
+    height:340px;  
+}
+
+
+div.clustered_results div div span.surrogate_thumb{
+  position:relative;
+  left: 0px;
+}
+
+
+div.clustered_results div div span.surrogate_desc{
+  font-size: 70%;
+  color: black;
+  position:relative;
+  left: 130px;
+  top: -120px;
+}
+
+
+div.clustered_results div div span.surrogate_desc a:visited{
+  color:blue;
+}
+
+
+div.clustered_results div.cluster_info span.cluster_desc{
+  font-size: 100%;
+  color:black;
+  position:relative;
+  left: 80px;
+  top: -100px;
+}
+
+div.clustered_results div.cluster_info span.cluster_desc h3{
+  margin-bottom: 3px;
+}
+
+div.clustered_results div.cluster_info span.cluster_desc a:visited{
+  color:blue;
+}
+
+
+div.clustered_results div.cluster_info span.cluster_thumb{
+  font-size: 80%;
+  color:red;
+  position:relative;
+  left: 530px;
+  top: -240px;
+}
+
+
+
+
+a.no_border img{
+  border-width: 0px;
+}
+
+
+img.help_images {
+	border-width: 10px;
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

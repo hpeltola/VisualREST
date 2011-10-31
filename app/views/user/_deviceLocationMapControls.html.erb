@@ -1,0 +1,11 @@
+
+
+<% if params[:showPath] == 'true' %>
+	<a href="#" onclick="new Ajax.Request('/ajax/update/deviceLocationMap', {asynchronous:true, evalScripts:true, method:'post', parameters: 'username=' + '<%= params[:username] %>' + '&devicename=' + '<%= params[:devicename]%>' + '&showPath=false'}); return false;">
+		Hide device's locations path
+	</a>
+<% else %>
+	<a href="#" onclick="new Ajax.Request('/ajax/update/deviceLocationMap', {asynchronous:true, evalScripts:true, method:'post', parameters: 'username=' + '<%= params[:username] %>' + '&devicename=' + '<%= params[:devicename]%>' + '&showPath=true'}); return false;">
+		Show device's locations path
+	</a>
+<% end %>

@@ -1,0 +1,100 @@
+<div id="settings_top">
+<span>Context settings</span>
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/contextSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Manage your contexts, and change names for them</span>
+<%else%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/contextSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+  
+  
+<fieldset>
+  <legend>Available new contexts</legend>
+<% if @hasAccess != nil %>
+  <% editID=0 %>
+    <table>
+      <tr>
+        <th>Original name</th>
+        <th>Give name</th>
+      </tr>
+      <% @hasAccess.each do |x| %>
+        <tr>
+          <td>
+            <%=x.name%>
+          </td>
+          <td>
+            <input id="ctxName_<%=editID%>" value="<%=x.name%>">
+          </td>
+          <td>
+            <button onclick="changeContextName('ctxName_<%=editID%>', '<%=x.context_hash %>')">Add to your contexts</button>
+          </td>
+        </tr>
+        <%editID=editID+1%>
+      <% end %>
+    </table>
+<% else %>
+ None    
+<% end %>
+</fieldset>
+
+
+<fieldset>
+  <legend>Your named contexts</legend>
+  <% if @hasAdded != nil %>
+    <% editID=0 %>
+    <table>
+      <tr>
+        <th>Owner</th>
+        <th>Owner named</th>
+        <th>You named</th>
+        <th>Change name</th>
+      </tr>
+      <% @hasAdded.each do |x| %>
+        <tr>
+          <td>
+            <%=x.owner_name%>
+          </td>
+          <td>
+            <%=x.c_name%>
+          </td>
+          <td>
+            <%=x.ctx_name%>
+          </td>
+          <td onkeypress="checkEnterContext(event, 'yourCtxName_<%=editID%>', '<%=x.c_context_hash %>')">
+            <input id="yourCtxName_<%=editID%>" value="<%=x.ctx_name%>">
+          </td>
+          <td>
+            <button onclick="changeContextName('yourCtxName_<%=editID%>', '<%=x.c_context_hash %>')">Rename</button>
+          </td>
+        </tr>
+        <%editID=editID+1%>
+      <% end %>
+    </table>
+  <% else %>
+    None
+  <% end %>
+</fieldset>
+  
+  
+  
+  
+  
+  
+  
+  
+<%end%>
+  
+  
+  
+  
+  

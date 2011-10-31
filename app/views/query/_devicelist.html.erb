@@ -1,0 +1,25 @@
+
+
+<div id="device_list">
+	<% @results.each do |device| %>
+  <% oe = cycle('odd', 'even')%>
+  <% if @onlinelist[device.id] %>
+    <div class="device_online" id="<%=device.id%>_status">
+  <% elsif device.dev_type == "virtual_container"%>
+    <div class="device_type_virtual" id="<%=device.id%>_status">
+  <% else %>   
+		<div class="device_<%= oe%>" id="<%=device.id%>_status">
+  <% end %>
+		
+		<span id="dev_name"><span style="font-weight:bold;">Device name:  </span><span style="font-size:90%;"><%=device.dev_name%></span></span>
+		<span id="dev_delete"><button onclick="removeContent('/user/<%=session[:username]%>/device/<%=device.dev_name%>','/device/checkDeviceStatus', 'Are you sure that you want to delete the device and all its content permanently?')">Delete</button></span>
+		<span id="dev_clearfiles"><button onclick="removeContent('/user/<%=session[:username]%>/device/<%=device.dev_name%>/files','/device/checkDeviceStatus', 'Are you sure that you want to delete all the content of the device permanently?')">Remove files</button></span>
+		<span id="dev_settings"><%= link_to h("settings"), :controller => 'user', :action => 'deviceSettings', :username => device.username, :devicename => device.dev_name %></span>
+		<span id="dev_files"><%= link_to 'files', :controller => 'query', :action => 'get', :username => device.username, :devicename => device.dev_name, :what_to_get => 'files' %></span>
+			
+		</div>
+	<% end %>
+</div>
+<!--
+<p>Online = <img src="<%= "/thumbnails/vR_online_2_32.png" %>" alt="Online" />,  Offline = <img src="<%= "/thumbnails/vR_offline_32.png" %>" alt="Offline" /></p>
+-->

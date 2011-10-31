@@ -1,0 +1,79 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Email instructions</h1>
+  <p>
+    It is possible to add files to visualrest with your email account. 
+    There are some steps you need to take before this is possible. 
+    After you have made the necessary initializations, you can:
+    <ul>
+      <li>Send mail to VisualREST mailbox</li>
+      <li>Let VisualREST fetch mail attachments directly from your mail account</li>
+    </ul>
+  </p>
+
+
+
+<h1>Sending mail to VisualREST mailbox</h1>
+<P>You can send mail to VisualREST's mail account. Attachments will be saved to your VisualREST account.</P>
+
+<h3>Initialization</h3>  
+  <p>
+    <ul>
+      <li>You need to save the email address you are sending files from to VisualREST. (Settings->Email settings)</li>
+      <ul><li>You can save only email address, the rest is used if you want persistent checking of your account</li></ul>
+      <li>You need to have a context, to which the files will be linked to.</li>
+      <li>The files will be stored on a virtual device called "visualrest_mail_box".</li>
+    </ul>
+  </p>
+  
+<h3>Sending file</h3>
+  <p>
+    <ul>
+      <li>Send the file from mail account that has been saved to VisualREST.</li>
+      <li>Send the file to hermannihiiri.tty+[yourUsername_contextName]@gmail.com <br /> eg. hermannihiiri.tty+jack_holiday@gmail.com</li>
+      <li>You can put "[p]" on the subject field, and the rest of the subject field will be prefix for the filenames.</li>
+    </ul>
+  </p>
+
+
+<h1>Harvesting your mail account</h1>
+  <p>You can save your mail account information to VisualREST. 
+  VisualREST will go through all old mails and actively look for new mails. 
+  All attachment files will be saved to your VisualREST account.</p>
+
+<h3>Initialization</h3>
+  <p>
+    <ul>
+      <li>You need to add your mail account information to VisualREST (Settings->Email settings):</li>
+      <ul>
+        <li>Email address</li>
+        <li>Mail username</li>
+        <li>Mail password</li>
+        <li>Mail server</li>
+        <li>Mail server port</li>
+        <li>Encryption (TLS or SSL)</li>
+        <li>Container that files will be fetched to</li>
+        <li>Persistent checking (This can be changed after mail account information has been added to the system)</li>
+      </ul>
+      <li>Your account information security:</li>
+      <ul>
+        <li>Note that these informations will be stored on the server without encryption.</li>
+        <li>When you delete your mail account information from VisualREST, it will be removed from the database.</li>
+      </ul>   
+    </ul>
+  </p>
+  
+<h3>Usage</h3>
+  <ul>
+    <li>If you have selected persistent checking, your mail account will be actively checked for new content.</li>
+    <li>Your whole mail account will be looked for mail attachments and saved to VisualREST.</li>
+    <li>In (Settings->Email settings) you can see a list of your mail accounts.</li> 
+    <li>You can change the persistent checking (true/false) </li>
+    <li>If you need to change different settings, you can delete the email information and create new</li>
+    <li>Until persistent checking is turned on, no mails will be harvested.</li>
+    <li>When persistent checking is turned on for the first time, all old mails will be checked from your mail account.</li>
+  <ul>

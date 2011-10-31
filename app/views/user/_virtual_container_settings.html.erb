@@ -1,0 +1,70 @@
+<div id="settings_top">
+<span>Virtual container settings</span>
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/virtualContainerSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Manage your virtual containers here.</span>
+<%else%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/virtualContainerSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+
+ 
+<fieldset>
+  <legend>Your virtual containers</legend>
+  <% if @devices != nil %>
+  <% editID=0 %>
+  <table>
+    <tr>
+      <th>Name</th>
+      <th>New name</th>
+      <th></th>
+    </tr>
+    <% @devices.each do |x|%>
+    <tr>
+      <td><%=x.dev_name%></td>
+      <td><input id="vc_name_<%=editID%>" value="<%=x.dev_name%>" background-color="white">
+      <td>
+        <button onclick="change_container_name('vc_name_<%=editID%>', '<%=x.dev_name%>')">Change container name</button>
+      </td>
+    </tr>
+    <%editID=editID+1%>
+    <%end%>
+  </table>
+    
+  <%else%>
+    None
+  <%end%>
+  
+</fieldset> 
+ 
+ 
+<fieldset>
+  <legend>Add new virtual container</legend>
+  <table>
+    <tr>
+      <th>Name</th>
+      <th></th>
+    </tr>
+    <tr>
+      <td><input id="vc_name">
+      <td>
+        <button onclick="create_new_virtual_container('vc_name')">Create new virtual container</button>
+      </td>
+    </tr>
+    
+  </table>
+  
+</fieldset>
+<%end%>
+  
+
+
+

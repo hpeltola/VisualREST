@@ -1,0 +1,123 @@
+<div id="settings_top">
+<span>Node settings</span>
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <%puts "hide"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/nodeSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Manage your nodes, observers and more</span>
+<%else%>
+  <%puts "show"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/nodeSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+
+  
+  <% if @userNodes != nil %>
+ <fieldset>
+  <legend>Your nodes:</legend>
+  <table>
+  <%editID=0%>
+  <% @userNodes.each do |x| %>
+    <%if x == "http://jabber.org/protocol/tune"%>
+      <% next %>
+    <%end%>
+  
+    <tr>
+      <div id="editID_<%=editID%>">
+        <td>
+            <button  onclick="deleteNode('editID_<%=editID%>', '<%=x%>');" >Delete</button><br />
+        </td>
+<%if params["showId"] == "showID_#{editID.to_s}"%>
+        <td>
+          <a href="#" onclick="createStanza('showID_HIDE');"><%= x %></a>
+        </td>
+<%else%>
+        <td>
+          <a href="#" onclick="createStanza('showID_<%=editID%>');"><%= x %></a>
+        </td>
+<%end%>
+      </div>
+    </tr>
+
+<%if params["showId"] == "showID_#{editID.to_s}"%>
+
+      <tr>
+        <div>
+        <td></td> <!-- Must be here in order to render the table correctly! -->
+        <td>  
+        <div id="showID_<%=editID%>" class="yellow-box" style="font-size: 70%;">
+&lt;iq type="set" from="<%=@user.xmpp_jid%>@<%=@xmpp_host%>" to="<%=@node_servicee%>" id="sub1"&gt;<br />
+&nbsp; &lt;pubsub xmlns="http://jabber.org/protocol/pubsub"&gt;<br />
+&nbsp;&nbsp; &lt;subscribe node="<%=x%>" jid="<%=@user.xmpp_jid%>@<%=@xmpp_host%>"/&gt;<br />
+&nbsp; &lt;/pubsub&gt;<br />
+&lt;/iq&gt;
+        </div>
+        </td>
+        </div>
+      </tr>
+<%end%>
+    
+    
+    <%editID=editID+1%>
+  <% end %>
+  </table>
+ </fieldset>
+<% end %>
+
+
+<fieldset onkeypress="checkEnterAddNode(event)">
+  <legend>Edit:</legend> 
+  <%if not @user.xmpp_jid or not @user.xmpp_pw or @user.xmpp_jid == "" or @user.xmpp_pw == ""%>
+  <div id="red-box">
+    <p>Create XMPP account for user first!</p>
+  
+    <label for="XmppID">XMPP ID</label>
+    <input id="XmppID" value="<%=@user.username%>" /><%="@"+@xmpp_host.to_s%>
+    <br/>
+    <label for="XmppPW">XMPP Password</label>
+    <input id="XmppPW" value="" />
+    <button  onclick="saveXMPPAccount();" >New account</button>
+        <button  onclick="editXMPPAccount();" >Use existing</button><br />
+  </div><br/>
+  <%else%>
+    <div id="blue-box">
+      <p>Current Account details:</p>
+      <label for="XmppID">XMPP ID</label>
+      <input id="XmppID" value="<%=@user.xmpp_jid%>" /><%="@"+@xmpp_host.to_s%>
+      <br/>
+      <label for="XmppPW">XMPP Password</label>
+      <input id="XmppPW" value="<%=@user.xmpp_pw%>" />
+      <button  onclick="editXMPPAccount();" >Save</button><br />
+    </div>
+  <%end%>
+  
+  <br />
+  
+  <div class="yellow-box">
+    <p>Add new node:</p>
+    <%=@node_path_base%><input id="newNode" value="" <%if not @user.xmpp_jid or not @user.xmpp_pw or @user.xmpp_jid == "" or @user.xmpp_pw == "" %>disabled="disabled"<%end%>>
+    <button  onclick="addNewNode('newNode', '<%=@node_path_base%>');" <%if not @user.xmpp_jid %>disabled="disabled"<%end%>>Add</button>
+  </div>
+</fieldset>
+
+  
+  
+  
+  
+  
+  
+  
+<%end%>
+  
+  
+  
+  
+  

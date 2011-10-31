@@ -1,0 +1,19 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  id_digest: MyString
+  username: MyString
+  dev_name: MyString
+  dev_type: MyString
+  last_seen: 2009-06-04 08:41:23
+  direct_access: false
+  address: MyString
+
+two:
+  id_digest: MyString
+  username: MyString
+  dev_name: MyString
+  dev_type: MyString
+  last_seen: 2009-06-04 08:41:23
+  direct_access: false
+  address: MyString

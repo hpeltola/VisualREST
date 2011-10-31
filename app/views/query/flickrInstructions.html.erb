@@ -1,0 +1,29 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Importing from Flickr</h1>
+<p>You can link your Flickr account with VisualREST and retrieve all your public or private photos.</p>
+
+<h2>Authorize VisualREST</h2>
+<p>First you need to give VisualREST authorization to read content from your Flickr account. <br />
+  <ul>  
+    <li>Go to 'Settings->Import content from flickr' and press 'Get Flickr Token'.</li>
+    <li>A popup window will ask you to authorize VisualREST.</li>
+    <li>Close the popup window and press 'refresh' button under the 'Get Flickr Token'-button.</li>
+    <li>Your Flickr authorization will be saved on VisualREST.</li>
+    <li>You can remove authorization token by pressing 'Delete Flickr token'-button</li>
+  </ul>
+</p>
+
+<h2>Import content from Flickr</h2>
+<p>
+  To import content from Flickr you need to have a virtual container and follow these instructions:
+  <ul>
+    <li>Select virtual container from list.</li>
+    <li>Select public/private photos to import from Flickr.</li>
+    <li>Press 'Get photos from Flickr'.</li>
+  </ul>
+</p>

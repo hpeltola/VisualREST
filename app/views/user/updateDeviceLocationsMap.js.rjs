@@ -1,0 +1,15 @@
+if params[:showPath] == 'true'
+
+  page << @map.add_overlay(GPolyline.new(@places_path))
+  page['deviceLocationGMapControls'].replace_html :partial => 'deviceLocationMapControls'
+
+
+else
+  
+  page << @map.clear_overlays
+  page << @map.overlay_init(@current_pos_marker)
+  page.replace_html 'deviceLocationGMapControls', :partial => 'deviceLocationMapControls'
+
+  
+end
+

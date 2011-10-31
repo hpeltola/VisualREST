@@ -1,0 +1,69 @@
+<% if @error %>
+<%= @error %>
+<% else %>
+
+<% if @file.path == "/"
+	 @fullpath = @file.name
+   else
+	 @fullpath = (@file.path.to_s + @file.name)[1..-1]
+   end %>
+
+<p>File: <b><%= @file.name %></b><br/>
+<a href="<%= ('/user/' + @user.username + '/device/' + @device.dev_name + '/fileversions/' + @fullpath) %>">File versions</a><br/>
+Device: <%= @device.dev_name %><br/>
+</p>
+
+<p>This file is <b><%= @filestate %></b>.
+<% if @filestate == "private" %>
+	<% form_tag( url_for( :action => 'editRights', :filepath => @fullpath,
+			   			  :username => @user.username, :devicename => @device.dev_name,
+			  			  :controller => 'devfile').gsub("%2F", "/"), { :method => :post }) do %>
+		<%= hidden_field_tag "makepublic", true %>
+		<%= submit_tag( "Make file public" ) %>
+	<% end %>	
+
+<% end%>
+</p>
+<br/>
+<fieldset>
+	<legend>Make file <% if @filestate == "public" %>private and <% end %>visible only to:</legend>
+
+<% form_tag( url_for( :action => 'editRights', :filepath => @fullpath,
+			   			  :username => @user.username, :devicename => @device.dev_name,
+			  			  :controller => 'devfile').gsub("%2F", "/"), { :method => :post }) do %>
+<% i = 0; cols = 4 %>
+<table class="users" border="0" cellpadding="5" cellspacing="1">
+<tr class="header">
+	<th colspan="<%=cols%>">Groups</th>
+</tr>
+<% @groups.each do |group| %>
+	<% if (i % cols == 0) %>
+		<tr class="<%= cycle('odd', 'even') %>">
+	<% end %>
+	<td>
+	<%= check_box "groups", group.name, options = {:checked => @group_checked[i]} %> 
+	<%= group.name %><br/>
+	<% i = i+1 %>
+	</td>
+	<% if (i % cols == 0) %>
+		</tr>
+	<% end %>
+<% end %>
+<% if (i % cols != 0) %>
+	</tr>
+<% end %>
+<tr>
+<td colspan="<%=cols%>" align="right">
+<%= submit_tag( "Modify visibility" ) %>
+</td>
+</tr>
+
+<tr>
+	<td colspan="<%=cols%>"><%= link_to "Create", :controller => 'user',
+					  :action => 'addGroup',
+					  :username => @user.username %> a new group.</td>
+</tr>
+</table>
+<% end %>	  
+</fieldset>
+<%end%>

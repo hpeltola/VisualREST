@@ -1,0 +1,154 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Instructions</h1>
+<h2>Context</h2>
+Context can be defined on the level of user (files or devices of user) and/or device (files of device).<br/><br/>
+Examples:
+<ul>
+	<li><b>/user/{username}/files</b><br/>All files of a single user<br/></li>
+	<li><b>/user/{username]/device/{devicename}/files</b><br/>All files of a single device<br/></li>
+	<li><b>/device/{device-id}/files</b><br/>All files of a single device<br/></li>
+	<li><b>/files</b><br/>All files (must be appended by a query)<br/><br/></li>
+	
+	<li><b>/user/{username}/devices</b><br/>All devices of a single user<br/></li>
+	<li><b>/devices</b><br/>All devices (must be appended by a query)</li>
+</ul>
+<br/>
+<h2>Query</h2>
+Query can be appended to the context.<br/><br/>
+Keywords for filesearch:
+<ul>
+	<li><b>search</b> - search filename and path</li>
+	<li><b>filename</b> - search filename</li>
+	<li><b>path</b> - search path</li>
+	<li><b>type</b> - search type</li>
+	<li><b>maxsize</b> - [ {number} | {number}kb | {number}mb ]</li>
+	<li><b>minsize</b> - [ {number} | {number}kb | {number}mb ]</li>
+	<li><b>maxlon</b> - maximum value of longitude</li>
+	<li><b>minlon</b> - minimum value of longitude</li>
+	<li><b>maxlat</b> - maximum value of latitude</li>
+	<li><b>minlat</b> - minimum value of latitude</li>
+	<li><b>filedateAfter</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>filedateBefore</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>addedAfter</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>addedBefore</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>updatedAfter</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>updatedBefore</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>user</b> - Can be used only if context is empty (discarded otherwise). Value can include wildcard "*".</li>
+	<li><b>device</b> Can be used only if context is empty or defined on user-level (discarded otherwise). Value can include wildcard "*".</li>    
+	<li><b>state</b> State of the device. Can be used only if context is defined on device-level (discarded otherwise). See below for more info on options for value.</li>
+</ul>
+Values for special keyword "state":
+<ul>
+	<li><b>{number}</b> - specify the version of filelist ("1" being the first version)</li>
+	<li><b>-{number}</b> - specify the version of filelist ("-1" being the latest version)</li>
+	<li><b>"original"</b> - the first version of the filelist of the device</li>
+	<li><b>"current"</b> - the latest version of the filelist of the device (default)</li>
+	<li><b>"combined"</b> - latest versions of all files that have ever been present in the device (even if deleted since)</li>
+	<li><b>[ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} ]</b> - snapshot of the filelist on the given date</li>
+</ul>
+<br/>
+Keywords for devicesearch:
+<ul>
+	<li><b>type</b> - search device type</li>
+	<li><b>addedAfter</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>addedBefore</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>updatedAfter</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>updatedBefore</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>lastseenAfter</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>lastseenBefore</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+	<li><b>user</b> - Can be used only if context is empty (discarded otherwise). Value can include wildcard "*".</li>
+	<li><b>device</b> Can be used only if context is empty or defined on user-level (discarded otherwise). Value can include wildcard "*".</li>
+</ul>
+<br/>
+<h3>User added metadata</h3>
+Query can have user added metadata as keywords.<br><br>
+List of user added metadata types:
+<ul>
+  <li>/metadatatypes</li>
+</ul>
+<br>
+User added metadata is one of the following types:
+<ul>
+  <li><b>string</b></li>
+  <li><b>float</b> - [123 | -123 | 123.12 | -123.12 ]</li>
+  <li><b>date</b> - [ {mm-dd-yyyy} | {yyyy-mm-dd} | {mmddyyyy} | {yyyy} ]</li>
+</ul>
+<br>
+Searching float or date types: with '<' or '>' at the end of value, you can search for smaller or larger float/date. Without suffix, you are searching for the exact float/date.
+<br><br>
+Append to query 'sparse=true', if you wish to remove results that don't have metadatatypes that were specified in query.
+If 'sparse' is not defined, files will not be removed from query results because of missing metadata.
+<br><br>
+If you want to see only files that are cached or available, append to query 'available_files_only=true'.
+<br><br>
+Metadatatype 'tag' is the only one that can have multiple values.
+<h2>Sorting</h2>
+Results can be sorted using parameter "sort_by" and ordered ascending/descending using parameter "order=[asc|desc]".<br/><br/>
+Search for <b>files</b> - Accepted values for parameter "sort_by":
+<ul>
+	<li>user</li>
+	<li>device</li>
+	<li>path</li>
+	<li>filename</li>
+	<li>date_added</li>
+	<li>date_updated</li>
+	<li>filedate</li>
+	<li>size</li>
+	<li>location</li>
+	<li>rank</li>
+</ul>
+<br/>
+Search for <b>devices</b> - Accepted values for parameter "sort_by":
+<ul>
+	<li>user</li>
+	<li>device</li>
+	<li>type</li>
+	<li>date_added</li>
+	<li>date_updated</li>
+	<li>last_seen</li>
+</ul>
+<br/>
+<h2>Examples</h2>
+Search for files:
+<ul>
+	<li>/user/abc123/files?type=png&maxsize=1mb<br/>
+	<li>/user/abc123/device/dev2/files?addedAfter=05-29-2009&sort_by=filename</li>
+	<li>/user/abc123/files?sort_by=device+filedate+size&order=asc+desc+asc</li>
+	<li>/device/433/files?search=pic&type=jpg+png+gif</li>
+	<li>/user/abc123/files?device=dev2+dev3+dev4+dev5&type=doc</li>
+	<li>/files?user=abc123+cde456&path=myfiles</li>
+	<li>/files?device=dev3&user=abc123&addedBefore=2008&maxsize=3000kb</li>
+	<li>/files?type=jpg</li>
+	<li>/user/abc123/files?maxlon=24.5&minlon=22.321&maxlat=62.11132&minlat=59.999&sort_by=location</li>
+	<li>/files?type=jpg&faceCount=1</li>
+	<li>/files?type=jpg&floatValue=12.34<</li>
+	<li>/files?type=jpg&ownDate=2000></li></li>
+	<li>/files?type=jpg&ownDate=19990101</li>
+	<li>/files?type=png&ownDate=1999<+2005></+2005></li>
+	<li>/files?type=png&city=ampere+pere&sparse=false</li>
+</ul>
+<br/>
+Search for devices:
+<ul>
+	<li>/user/abc123/devices?type=pc&lastseenAfter=2009-08-15</li>
+	<li>/user/abc123/devices?device=dev1+dev2+dev5&sort_by=last_seen</li>
+	<li>/devices?user=abc123+cde456</li>
+	<li>/devices?type=mobile&updatedAfter=2009</li>
+</ul>
+<br/>
+Search for users:
+<ul>
+  <li>/users?user=abc123+kalle+john</li>
+</ul>
+<br/>
+<h2>Additional keywords</h2>
+<ul>
+	<li><b>maxresults</b> - specify maximum number of results returned. Default is 100. Can be used with feeds only.</li>
+	<li><b>page</b> - specify page
+	<li><b>perpage</b> - specify items per page </li>
+</ul>

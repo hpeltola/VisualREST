@@ -1,0 +1,91 @@
+<div id="settings_top">
+<span>Import content from Facebook</span>
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <%puts "hide"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/fbSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Import new content from Facebook to VisualREST</span>
+<%else%>
+  <%puts "show"%>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/fbSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+  
+<%if not @fb_auth_token%>
+  <div id="red-box">
+    <p>You need to get authentication token first!</p>
+
+    <input type="button" value="Get FaceBook access token" onClick="location.href='/fb_login'">
+
+  </div>
+<%end%>
+
+
+
+<%if @fb_auth_token %>
+<% puts @fb_auth_token.s_token %>
+
+
+
+<% form_tag( "/user/" + session[:username] + "/fbImportFromAlbums", :method => "post" ) do %>
+   <fieldset>
+    <legend>Import photos from FaceBook albums:</legend>
+    <table>
+      
+      <% @photo_albums.each do |name, id| %>
+      
+      <tr class="<%= cycle('odd', 'even') %>">
+        <td><%= name %></td>
+        <td>
+          <%= check_box "checked_albums", id, options = {} %>
+        </td>
+      </tr>
+      <% end %>
+    </table>
+    
+    <br />
+    
+    Select container:
+    <%if @v_containers%>
+      <select name="container_name" >      
+      <% @v_containers.each do |vc| %>
+        <option value="<%=vc.dev_name%>" <%if vc.dev_name == "facebook_container" %>selected="selected"<%end%> ><%=vc.dev_name%></option>
+      <% end %>
+      </select>
+    <%end%>
+    <br />
+    <br />
+    <%= submit_tag "Import the photos from selected albums", :class => "submit", :name => nil %>
+    
+    
+  </fieldset>
+
+  <%end%> <!-- form_tag -->
+
+  <fieldset>
+  <legend>Delete FaceBook access token</legend>
+      <center>        
+      <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/fbDeleteToken', '/user/<%= session[:username] %>/fbSettings/')" style="float: right;">Delete Facebook token</button>      
+      </center>
+    <p><i>If your photo albums show up no more, try deleting the access token and getting a new one!</i></p>
+  </fieldset>
+
+<%end%>
+
+
+
+  
+<%end%>
+  
+  
+  
+  
+  

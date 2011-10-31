@@ -1,0 +1,37 @@
+<?xml version="1.0" ?> 
+<xmpp-rest>
+  <method>CREATE</method>
+  <user username="testikkeli">
+    <device devicename="t1">
+    
+      <files>
+      
+        <!-- compulsory -->
+        <prev_commit_hash>0</prev_commit_hash>
+        <commit_hash>51a1c882cf59e0f922fa7909f91e27467ca8e741</commit_hash>
+            
+        <file fullpath="polku/tiedosto.txt">
+          
+          <!-- compulsory -->
+          <path>/polku</path>  
+          <filename>tiedosto.txt</filename>
+          <filedate>2010-04-22T19:47:18+03:00</filedate>
+          <filetype>text/plain</filetype>
+          <filesize>10303</filesize>
+          <version_hash>51a1c882cf59e0f922fa7909f91e27467ca8e74a</version_hash>
+      
+          <!-- optional -->
+          <location>
+            <latitude>61.5</latitude>
+            <longitude>23.75</longitude>
+          </location>
+          <file_status>cached</file_status>
+          <file_version>0</file_version>
+      
+          <!-- optional users added metadata-->
+          <metadata type="faces">6</metadata>
+        </file>  
+      </files>
+    </device>
+  </user>
+</xmpp-rest>

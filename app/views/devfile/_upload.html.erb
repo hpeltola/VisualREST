@@ -1,0 +1,10 @@
+<% if loading %>
+	<%= image_tag "ajax-loader2.gif" %>
+<% elsif offline %>
+	Device offline!
+	<a href="#" onclick="new Ajax.Request('/devfile/requestUploadtest/<%=file_id%>', {asynchronous:true, evalScripts:true}); return false;">
+		<img src="<%= "/thumbnails/vR_upload_32.png" %>" alt="Upload" border="0"/>
+	</a>
+<% else%>
+	File uploaded!
+<% end %>

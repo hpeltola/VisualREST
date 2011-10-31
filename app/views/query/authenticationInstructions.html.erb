@@ -1,0 +1,51 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Client authentication Instructions</h1>
+<p>Client authentication parameters are sent with every request.</p>
+
+<h2>Needed parameters</h2>
+  
+<ul>
+  <li><b>i_am_client:</b> "true"</li>
+  <li><b>auth_username:</b> username</li>
+  <li><b>auth_timestamp:</b> Unix timestamp... seconds since Jan 01 1970.</li>
+  <li><b>auth_hash:</b> SHA1-hash calculated from auth_timestamp+password+path</li>
+</ul>
+
+<h2>Example: Creating context</h2>
+
+<ul>
+  <li><b>URL:</b>http://visualrest.cs.tut.fi/contexts/</li>
+  <li><b>Path:</b>/contexts/</li>
+  <li><b>Method:</b>POST</li>
+  <li><b>Parameters:</b>
+    <ul>
+      <li><b>i_am_client: </b>"true"</li>
+      <li><b>auth_username: </b>testuser</li>  
+      <li><b>auth_timestamp: </b>"1288094240"</li>
+      <li><b>auth_hash: </b>4cd477bd205950207153f51a7b71b09fae7e25e5</li>
+    </ul>
+  </li>
+</ul>
+<p> auth_hash was calculated from "1288094240testuser/contexts/".</p>
+
+<h2>Example: Making query for files</h2>
+
+<ul>
+  <li><b>URL:</b>http://visualrest.cs.tut.fi/files.atom?type=jpg</li>
+  <li><b>Path:</b>/files.atom</li>
+  <li><b>Method:</b>GET</li>
+  <li><b>Parameters:</b>
+    <ul>
+      <li><b>i_am_client: </b>"true"</li>
+      <li><b>auth_username: </b>testuser</li>  
+      <li><b>auth_timestamp: </b>"1288867865"</li>
+      <li><b>auth_hash: </b>46435b1541c69399233a9435f83a37d474461729</li>
+    </ul>
+  </li>
+</ul>
+

@@ -1,0 +1,80 @@
+<h1>User: <%=  @user.username %></h1>
+
+  <div class="files">
+    <div class="odd">
+      <span class="file_left">
+        <ul id="nav2">
+          <ul>
+            <li>
+              <a href ="<%= ('/user/' + @user.username + '/metadatas/thumbnail' ) %>">   
+                <img class="backg" src="<%= '/user/' + @user.username + '/metadatas/thumbnail' %>"/>          
+              </a>
+          </li>
+        </ul>
+      </ul>
+      </span>
+  
+      <span class="file_center">
+
+             &nbsp;
+
+            
+           <br/>
+           <span class="quitesmall"><%= ("&nbsp;&nbsp; 
+                  <b>Name:</b> " + @user.real_name + "<br/>&nbsp;&nbsp; 
+                  <b>Username:</b> " + @user.username) %>
+            <br/>
+            </span>
+      </span>
+      
+
+    </div>
+    
+    <h3 title="Groups you are the owner of">Own groups</h3>
+    <table frame=box rules=all cellpadding="5%">
+      <tr>
+        <th title="Name of the group">Group name</th>
+        <th title="Total amount of users in this group">Members</th>
+      </tr>
+      <% if @own_groups != nil %>
+        <% @own_groups.each do |x|%>
+          <tr>
+            <td><%= x["name"] %></td>
+            <td><%= x["members"]%>            
+          </tr>
+        <% end %>
+      <% end %>
+    </table>
+    
+    <h3 title="Groups you are a member of">Member in groups</h3>
+    <table frame=box rules=all cellpadding="5%">
+      <tr>
+        <th title="Name of the group">Group name</th>
+        <th title="Username of the user that has created this group">Owner</th>
+        <th title="Total amount of users in this group">Members</th>
+      </tr>
+      <% if @groups != nil %>
+        <% @groups.each do |x|%>
+          <tr>
+            <td><%= x["name"] %></td>
+            <td><%= x["owner_name"] %></td>
+            <td><%= x["members"]%>            
+          </tr>
+        <% end %>
+      <% end %>
+    </table> 
+    
+    <h3 title="Users in same group with you">Users in same group with you</h3>
+    <table frame=box rules=all cellpadding="5%">
+      <tr>
+        <th>Username</th>
+      </tr>
+      <% if @friends != nil %>
+        <% @friends.each do |x, y|%>
+          <tr>
+            <td><a href="<%=@host%>/user/<%=y%>"><%=y%></a></td>
+          </tr>
+        <% end %>
+      <% end %>  
+    </table>
+  </div>

@@ -1,0 +1,116 @@
+
+# curl -X [PUT|DELETE|POST|GET] [path] *[parametre_name=>parametre_value]
+
+# METADATA TYPE
+
+# Adds new metadata type:
+curl -X PUT /metadatatype/faceCount -d "value_type=float" 
+- value_type can be string, float or date. String is default.
+
+# Edits existing metadata type:
+curl -X POST /metadatatype/faceCount -d "new_metadata_type=headCount"
+- Can only change metadatatype name, not value_type
+
+# Gets list of existing metadata types:
+curl -X GET /metadatatypes
+
+
+# METADATA
+
+# Adds new metadata (or replaces existing one):
+- curl -X POST /user/testiuuseri/device/vimpain/metadata/1.jpg -d "metadata_type=headCount&metadata_value=2"
+- curl -X POST /user/testiuuseri/device/vimpain/metadata/1.jpg -d "metadata_type=someDate&metadata_value=20090215"
+
+# Deletes metadata:
+curl -X DELETE /user/testiuuseri/device/vimpain/metadata/1.jpg -d "metadata_type=headCount"
+
+#	USER
+
+# Adds new user:
+curl -X PUT /user/teemu/ -d "password=teemu&real_name=Teemu"
+
+
+
+
+#	GROUP
+
+# Adds new group for user:
+curl -X PUT /user/testiuuseri/group/koti/ 
+
+# Removes group from user:
+curl -X DELETE /user/testiuuseri/group/koti/ 
+
+
+
+
+#	USERS TO GROUP
+
+# Adds testuser to koti:
+curl -X PUT /group/koti/user/testuser/ 
+
+# Removes user from group:
+curl -X DELETE /group/koti/user/testuser/ 
+
+
+
+
+#	FILERIGHTS
+
+# Makes 1.jpg public:
+curl -X POST /user/testiuuseri/device/vimpain/filerights/1.jpg -d "public=true"
+
+# Edits 1.jpg filerights, gives group AA permission to file and denies from group Työ. (Notice parametres!!!):
+curl -X POST /user/testiuuseri/device/vimpain/filerights/1.jpg -d "group:Työ=0&group:AA=1"
+
+
+
+#	DEVICES
+
+# Adds new device to user:
+curl -X PUT /user/testiuuseri/device/omaPC/ -d "password=test&dev_type=testi"
+
+# Removes device from user (Notice! All data, thumbnails and uploaded files releated to device will be removed!):
+curl -X DELETE /user/testiuuseri/device/omaPC/ 
+
+
+# Gets user devices:
+curl -X GET /user/testiuuseri/devices[.atom] 
+
+# Deletes all devices and their files from user:
+curl -X DELETE /user/testiuuseri/devices 
+
+
+# Gets all files of user:
+curl -X GET /user/testiuuseri/files[.atom] 
+
+# Deletes all files from user:
+curl -X DELETE /user/testiuuseri/files 
+
+
+# Marks that device is online:
+curl -X POST /user/testiuuseri/device/vimpain/online 
+
+# Gets time when device was lastime online:
+curl -X GET /user/testiuuseri/device/vimpain/online 
+
+
+# Sends filelist to server in messages body:
+curl -X PUT /user/testiuuseri/device/vimpain/files 
+
+# Deletes all files of device (Notice! All files, thumbnails and uploaded files releated to device will be removed!):
+curl -X DELETE /user/testiuuseri/device/vimpain/files 
+
+
+# Gets file from device (to the server):
+curl -X GET /user/testiuuseri/device/vimpain/files/1.jpg
+
+# Uploads file to server. Uses http PUT to uri: /user/testiuuseri/device/vimpain/2.jpg:
+upload /2.jpg
+
+# Deletes uploaded file from server:
+curl -X DELETE /user/testiuuseri/device/vimpain/files/1.jpg 
+
+
+
+*******************************************************
+

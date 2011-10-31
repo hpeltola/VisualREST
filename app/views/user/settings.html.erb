@@ -1,0 +1,431 @@
+<h1><%= @title %></h1>
+<div id="settings">
+  
+<div id="group_settings">
+<%= render :partial => "usergroup" %>
+</div>
+<br/>
+
+
+
+<div id="node_settings">
+<%= render :partial => "node_settings" %>
+</div>
+<br/>
+
+<div id="email_settings">
+<%= render :partial => "email_settings" %>
+</div>
+<br/>
+
+
+<div id="context_settings">
+<%= render :partial => "context_settings" %>
+</div>
+<br/>
+
+<div id="virtual_container_settings">
+<%= render :partial => "virtual_container_settings" %>
+</div>
+<br/>
+
+<div id="import_content_from_flickr">
+<%= render :partial => "import_content_from_flickr" %>
+</div>
+<br />
+
+<div id="import_content_from_fb">
+<%= render :partial => "import_content_from_fb" %>
+</div>
+<br />
+
+<div id="dropbox_settings">
+<%= render :partial => "dropbox_settings" %>
+</div>
+
+
+
+
+
+
+<!-- The following javascript is used for handling buttons pressed in "edit_emails"  -->
+<script type="text/javascript">
+
+  // BEGIN EMAIL STUFF //
+  function addNewEmail(input_email, input_username, input_password, input_server, input_port, input_checking, input_encryption, input_device){
+    var email = document.getElementById(input_email).value;
+    var username = document.getElementById(input_username).value;
+    var password = document.getElementById(input_password).value;
+    var server = document.getElementById(input_server).value;
+    var port = document.getElementById(input_port).value;
+    var checking = document.getElementById(input_checking).checked;
+    var tls_encryption = true; 
+    if( document.getElementById(input_encryption).value == "SSL" ){
+      tls_encryption = false;
+    }
+    var device = document.getElementById(input_device).value;
+
+
+    new Ajax.Request('/user/<%= session[:username] %>', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'add_email='+email+'&mail_username='+username+'&mail_password='+password+'&mail_server='+server+'&mail_port='+port+'&mail_checking='+checking+'&mail_tls_encryption='+tls_encryption+'&to_device='+device+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){
+                  if(data.status == 200){
+                    //window.location.reload();
+                    new Ajax.Request('/user/<%= session[:username] %>/emailSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    });    
+  }
+  
+  function deleteEmail(id){
+    var email = document.getElementById(id).innerHTML;
+    new Ajax.Request('/user/<%= session[:username] %>', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'remove_email='+email+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request('/user/<%= session[:username] %>/emailSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    });
+  }
+  function emailCheckingChange (id){
+    var email = document.getElementById(id).innerHTML;
+    new Ajax.Request('/user/<%= session[:username] %>', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'change_email_persistent='+email+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request('/user/<%= session[:username] %>/emailSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    });
+  }
+ 
+  // Used when adding new email. Can press enter, instead of having to click with mouse.
+  function checkEnterEmail(e){
+    if (e.keyCode == 13){
+      addNewEmail('input_email', 'input_username', 'input_password', 'input_server', 'input_port', 'input_checking', 'input_old_mails');
+    }
+  }
+  
+  // END EMAIL STUFF //
+  
+  
+  // BEGIN CONTEXT STUFF //
+  function changeContextName(inputID, context_hash){
+    var name = document.getElementById(inputID).value;
+    new Ajax.Request('/user/<%=session[:username]%>/contexts/'+name, {asynchronous:true, evalScripts:true, method:'put',
+                parameters: 'context_hash='+context_hash+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){
+                  if(data.status == 200){
+                    //window.location.reload();
+                    new Ajax.Request('/user/<%= session[:username] %>/contextSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    });    
+  }
+  
+  function checkEnterContext(e, id, context_hash){
+    if (e.keyCode == 13){
+      changeContextName(id, context_hash);
+    }
+  }
+  // END CONTEXT STUFF //  
+ 
+  // BEGIN CONTAINER STUFF // 
+  function change_container_name(id, oldname) {
+    var name = document.getElementById(id).value;
+      
+    new Ajax.Request('/user/<%= session[:username] %>/virtualContainerSettings/', {asynchronous:true, evalScripts:true, method:'put',
+            parameters: 'hide=false&old_name='+oldname+'&new_name='+name+'&authenticity_token=<%= form_authenticity_token %>',
+    });  
+      
+  }
+  
+    function create_new_virtual_container(id) {
+    var name = document.getElementById(id).value;
+      
+    new Ajax.Request('/user/<%= session[:username] %>/virtualContainerSettings', {asynchronous:true, evalScripts:true, method:'put',
+            parameters: 'hide=false&create_virtual_device=true&dev_name='+name+'&dev_type=virtual_container&authenticity_token=<%= form_authenticity_token %>',
+            //onSuccess: function(data){
+              //console.log(data.status);
+              //if(data.status == 201){
+                //window.location.reload();
+              //  new Ajax.Request('/user/<%= session[:username] %>/virtualContainerSettings/', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+              //}
+            //}
+    });  
+      
+  }
+  
+  // END CONTAINER STUFF //
+  
+  
+  // BEGIN FLICKR STUFF //
+
+  function basicPopup(url) {
+    popupWindow = window.open(url,'popUpWindow','height=640,width=800,left=70,top=70,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no, status=yes');
+  }
+
+  function refreshFlickrDiv(){
+    new Ajax.Request('/user/<%= session[:username] %>/importContentFromFlickr', {asynchronous:true, evalScripts:true, method:'put',
+            parameters: 'hide=false&authenticity_token=<%= form_authenticity_token %>',
+    });  
+  }
+  
+  function deleteFlickrToken(){
+    new Ajax.Request('/user/<%= session[:username] %>/importContentFromFlickr', {asynchronous:true, evalScripts:true, method:'put',
+            parameters: 'hide=false&delete_flickr_token=true&authenticity_token=<%= form_authenticity_token %>',
+    });  
+  }
+  
+  function getPhotosFromFlickr(input_device, privacy_filter){
+    var device = document.getElementById(input_device).value;
+    var privacy = document.getElementById(privacy_filter).value;
+    
+    
+    new Ajax.Request('/user/<%= session[:username] %>/importContentFromFlickr', {asynchronous:true, evalScripts:true, method:'put',
+            parameters: 'hide=false&getPhotosFromFlickr=true&container_name='+device+'&privacy_setting='+privacy+'&authenticity_token=<%= form_authenticity_token %>'
+    }); 
+    
+  }
+  
+  // END FLICKR STUFF //
+  
+  
+  
+  
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //            GROUP STUFF
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  
+  
+  
+  
+    // id is of the input box
+  function addNewGroup(id){
+    group = document.getElementById(id).value;
+    
+    new Ajax.Request('/user/<%= session[:username] %>/addGroup/<%=%>', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'groupname='+group+'&authenticity_token= <%= form_authenticity_token %>',
+                onSuccess: function(data){
+                  if(data.status == 200){
+                    //window.location.reload();
+                    new Ajax.Request('/ajax/groupsettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    });    
+  }
+  
+  function checkEnterAddGroup(e){
+    if (e.keyCode == 13){
+      addNewGroup('newGroup');
+    }
+  }
+  
+  
+  function deleteGroup(id){
+    var group = document.getElementById(id).innerHTML;
+    new Ajax.Request('/user/<%= session[:username] %>/deleteGroup', {asynchronous:true, evalScripts:true, method:'delete',
+                parameters: 'groupname='+group+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request('/ajax/groupsettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    });
+  }
+  
+  
+  
+  
+  
+  
+
+  
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //            NODE STUFF
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+  
+  
+  
+  // id is of the input box
+  function addNewNode(id, nodepath_pf){
+    
+    node = document.getElementById(id).value;
+    
+    new Ajax.Request('/user/<%= session[:username] %>/addNode/', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'node_nick='+node+'&nodepath='+nodepath_pf+node+'&authenticity_token= <%= form_authenticity_token %>',
+                onSuccess: function(data){
+                  if(data.status == 200){
+                    //window.location.reload();
+                    new Ajax.Request('/user/<%= session[:username] %>/nodeSettings/', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    }); 
+  }
+  
+  function checkEnterAddNode(e){
+    if (e.keyCode == 13){
+      addNewNode('newNode');
+    }
+  }
+  
+  
+  function deleteNode(id, node){
+
+    new Ajax.Request('/user/<%= session[:username] %>/deleteNode', {asynchronous:true, evalScripts:true, method:'delete',
+                parameters: 'nodepath='+node+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request('/user/<%= session[:username] %>/nodeSettings/', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }
+                }
+    });
+  }
+  
+
+  
+
+  
+
+  
+  
+  function createStanza(showId){
+        new Ajax.Request('/user/<%= session[:username] %>/nodeSettings', {asynchronous:true, evalScripts:true, method:'post', 
+           parameters: 'showId=' + showId +'&hide=false&authenticity_token=' + '<%= form_authenticity_token %>' }); 
+  }
+  
+  
+  
+  
+  function saveXMPPAccount(){
+    
+    var xmppid  = document.getElementById('XmppID').value;
+    var xmpppw  = document.getElementById('XmppPW').value;
+
+    new Ajax.Request('/user/<%= session[:username] %>/addXMPPAccount', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'xmppid='+xmppid+'&xmpppw='+xmpppw+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request('/user/<%= session[:username] %>/nodeSettings/', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }},
+                onFailure: function(data){
+                    alert(data.responseText);
+                  }
+                
+    });
+  }
+  
+ function editXMPPAccount(){
+    
+    
+    var xmppid  = document.getElementById('XmppID').value;
+    var xmpppw  = document.getElementById('XmppPW').value;
+
+    new Ajax.Request('/user/<%= session[:username] %>/editXMPPAccount', {asynchronous:false, evalScripts:true, method:'post',
+                parameters: 'xmppid='+xmppid+'&xmpppw='+xmpppw+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request('/user/<%= session[:username] %>/nodeSettings/', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }},
+                onFailure: function(data){
+                    alert(data.responseText);
+                  }
+                
+    });
+  }
+  
+
+
+
+
+
+
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //  DROPBOX STUFF
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+ function getDBtoken(){
+    
+    
+    var uname  = document.getElementById('uname').value;
+    var passw  = document.getElementById('passw').value;
+
+    new Ajax.Request('/user/<%= session[:username] %>/getDropboxToken', {asynchronous:false, evalScripts:true, method:'post',
+                parameters: 'passw='+passw+'&uname='+uname+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request('/user/<%= session[:username] %>/dropboxSettings/', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }},
+                onFailure: function(data){
+                    alert(data.responseText);
+                  }
+                
+    });
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////
+//
+//     GENERIC STUFF
+//
+///////////////////////////////////////////////////////////////////
+
+
+
+  function plainAjaxButton(uri, success_uri){
+        new Ajax.Request(uri, {asynchronous:false, evalScripts:true, method:'delete',
+                parameters: 'authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200){
+                    new Ajax.Request(success_uri, {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                  }},
+                onFailure: function(data){
+                    alert(data.responseText);
+                  }
+                
+    });
+  }
+  
+  
+  
+  
+</script>

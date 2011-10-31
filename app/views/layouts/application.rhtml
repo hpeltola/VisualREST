@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title><%= @title %></title>
+        <%= stylesheet_link_tag "new" %>
+        <%= javascript_include_tag :defaults %>
+        <%= javascript_include_tag "FloatingList.js" %>
+        <%= javascript_include_tag "/javascripts/suggest.js" %>
+		    <%= GMap.header %>
+		    
+		    <meta property="og:title" content="VisualREST - a distributed content management system"/>
+        <meta property="og:url" content="http://beta.visualrest.cs.tut.fi:8443/"/>
+        <meta property="og:site_name" content="VisualREST"/>
+        <meta property="og:description"
+              content="A Content Management System for distributed heterogeneous environment."/>
+
+		    
+
+    </head>
+    <body>
+<!--      
+      <div id="sides" style="position:relative;">
+        <div id="rside" style="position:absolute; right: -1px;">
+      <div id="fblike">
+<script src="http://connect.facebook.net/en_US/all.js#xfbml=1"></script>
+<fb:like></fb:like>
+</div>
+      </div>
+      <div id="lside" style="position:absolute; left: 1px;">
+        </div>
+-->      
+        <div id="whole_page">
+            <div id="header">
+                VisualREST
+            </div>
+            <!-- header -->
+            <div id="nav">
+                <span style="float: right">
+                	<% if session[:user_id] -%>
+						<%= nav_link "Search", "query", "search" %>
+						<%= nav_link_to_user_settings "Settings", session[:username] %>
+						<%= nav_link_devices "Devices", session[:username] %>
+                    	<%= link_to_API "API" %>
+                    	<%= nav_link "Logout", "user", "logout" %>
+                    <% else -%>
+                    	<%= nav_link "Register", "user", "register" %>
+                    	<%= nav_link "Login", "user", "login" %>
+                    <% end -%>
+                </span>
+                <%= nav_link "Home",	 "site" %>
+                <%= nav_link "Help",	 "site", "help" %>
+            </div>
+            <!-- nav -->
+            <div id="content">
+                <% if flash[:notice] -%>
+                <div id="green-box">
+                    <%= flash[:notice] %>
+                </div>
+                <% end -%>
+                <%= yield %>
+            </div>
+            <!-- content -->
+        </div>
+        <!-- whole_page --><% if ENV["RAILS_ENV"] == "development" %>
+        <div id="debug">
+            <a href="#" onclick="Element.toggle('params_debug_info');return false">params</a>
+            |<a href="#" onclick="Element.toggle('session_debug_info');return false">session</a>
+            <fieldset id="params_debug_info" class="debug_info" style="display: none">
+                <legend>
+                    params
+                </legend>
+                <%= debug(params) %>
+            </fieldset>
+            <fieldset id="session_debug_info" class="debug_info" style="display: none">
+                <legend>
+                    session
+                </legend>
+                <%= debug(session) %>
+            </fieldset>
+        </div>
+        <% end %>
+        
+      </div> <!-- sides -->
+        
+    </body>
+</html>

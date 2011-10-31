@@ -1,0 +1,101 @@
+
+<% @results.each do |file| %>
+<h1>File: <%=  file.name.to_s %></h1>
+
+  <div class="files">
+    <div class="odd">
+      <span class="file_left">
+        <ul id="nav2">
+          <ul>
+            <li>
+              <a href ="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/files' + file.path + file.name ) %>">
+              <%if file.thumbnail_name != nil %>
+                  <img class="backg" src="<%= "/thumbnails/" + file.device_id.to_s + "/" + file.thumbnail_name %>"/>
+              <%else %>
+               <img class="backg" src="<%= "/thumbnails/vR_no_picture_2.png" %>" alt="No thumbnail" />
+              <%end %>
+              </a>
+          </li>
+        </ul>
+      </ul>
+      </span>
+  
+      <span class="file_center">
+
+             
+
+            <a href="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/files/' + file.path) %>"><%= file.name %></a><br/>
+            <span class="quitesmall"><a href="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/fileversions/' + file.path) %>">Version list</a></span>
+            
+           <br/>
+           <span class="quitesmall"><%= ("
+                  <b>User:</b> " + file.username + "<br/> 
+                  <b>Device:</b> " + file.dev_name + "<br/> 
+                  <b>size:</b> " + file.size.to_s + " B <br/> 
+                  <b>type:</b> " + file.filetype + "<br/> 
+                  <b>date:</b> " + file.updated_at.strftime('%F %T').to_s) %>
+            <br/>
+            </span>
+      </span>
+      
+
+    </div>
+    
+    <div>
+      <span class="file_left">
+        <b>Rank value:</b> <%= file.rank%> <br /> <br />
+        
+        <b>Metadatas:</b>
+        <ul id="metadatas">
+             <% if @metadatas != nil %>
+               <% meta = @metadatas[file.devfile_id.to_i] %>
+               <% if meta != nil %>
+                 <% meta.each do |key, value| %>
+                    <li><b><%= key %></b>: <%= value %></li>
+                 <% end %>
+               <% end %>
+             <% end %> 
+        </ul>
+        <br />
+      <%if @metadatatypes %>
+        <b>Add metadata:</b><br />
+                     <select id="new_metadata_type">
+                       <% @metadatatypes.each do |mtype|%>
+                          <option><%=mtype.name%></option>
+                       <% end%>
+                     </select>
+                     <input autocomplete="off" id="new_metadata_value" onkeypress="checkEnter(event)">
+                     <button onclick="save_new_metadata();">Save</button>
+                     
+      <% end %>
+      </span>   
+        
+      
+    </div>
+    
+  </div>
+
+
+<script type="text/javascript">
+  function save_new_metadata(){
+    var type = document.getElementById("new_metadata_type").value;
+    var value = document.getElementById("new_metadata_value").value;
+    new Ajax.Request('/user/<%= file.username %>/device/<%=file.dev_name%>/metadata<%=file.path%><%=file.name%>', {asynchronous:true, evalScripts:true, method:'post',
+                parameters: 'metadata_type='+type+'&metadata_value='+value+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                  if(data.status == 200 || data.status == 201){
+                    window.location.reload();
+                  }
+                }
+    });
+  }
+  
+  function checkEnter(e){
+    if (e.keyCode == 13){
+      save_new_metadata();
+    }
+  }
+</script>
+
+
+<% end %>

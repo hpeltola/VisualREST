@@ -1,0 +1,12 @@
+
+<?xml version="1.0" ?>
+ 
+<xmpp2rest>
+  <method>CREATE</method>
+  <user username="ollipolli">
+    <real_name>Olli Pölli</real_name>
+    <password>ollipolli</password>
+  </user>
+</xmpp2rest>
+
+
