@@ -1,4 +1,4 @@
-@@xmpp_host = "nota.cs.tut.fi"
+@@xmpp_host = "change_this"
 @@xmpp_port = 5222
 @@xmpp_xml_dtd = "public/dtd/xmpp2rest_api.dtd"
 

@@ -44,6 +44,5 @@ begin
     
   end
 rescue Exception => e
-  puts "Error: #{e.to_s}"
-  puts "  -- line: #{e.backtrace[0].to_s}"
+  puts "Problem initializing metadatatypes!"
 end

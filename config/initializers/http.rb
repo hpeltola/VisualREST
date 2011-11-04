@@ -1,1 +1,1 @@
-@@http_host = "http://visualrest.cs.tut.fi"
+@@http_host = "http://localhost:8443"

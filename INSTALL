@@ -1,152 +1,120 @@
+## These insturctions have been tested on Ubuntu 10.10
 
-INTRODUCTION
-============
-This document describes the main steps to install and run a working visualrest program
+1. - Get ruby-1.8.7-p334 and rubygems-1.5.3
+> sudo apt-get install libruby1.8 zlib1g-dev libssl-dev libreadline5-dev build-essential
 
-REQUIREMENTS
-============
-You need ruby (version 1.8.7-p334) and the following gems (tested to work with these versions):
+- Get ruby-1.8.7-p334 and rubygems
+> wget ftp://ftp.ruby-lang.org/pub/ruby/1.8/ruby-1.8.7-p334.tar.gz
+> wget http://production.cf.rubygems.org/rubygems/rubygems-1.5.3.tgz
+> tar -xzf ruby-1.8.7-p334.tar.gz
+> tar -xzf rubygems-1.5.3.tgz 
+> cd ruby-1.8.7-p334/
+> ./configure
+> make
+> sudo make install
+> cd ../rubygems-1.5.3
+> sudo ruby setup
 
-actionmailer (2.3.5)  
-actionpack (2.3.5)        
-activerecord (2.3.5)       
-activeresource (2.3.5)    
-activesupport (2.3.5) 
-chronic (0.4.1)         
-diff-lcs (1.1.2)       
-fastthread (1.0.7)  
-grit (2.4.1)             
-json (1.5.1)            
-libxml-ruby (2.0.6)    
-mime-types (1.16)       
-mysql (2.8.1)        
-packet (0.1.15)           
-passenger (2.2.15)       
-rack (1.0.1)             
-rails (2.3.5)            
-rainbow (1.1.1)            
-rake (0.8.7)             
-rmagick (2.13.1)         
-ruby-hmac (0.4.0)          
-rubygems-update (1.5.3)   
-will_paginate (2.3.15)   
-xmpp4r (0.5)              
-
-
-SETTING UP
-==========
-
-### VisualREST installation instructions
-### For Ubuntu 10.10
-
-
-1. Install git and curl
-> sudo apt-get install git-core curl
-
-11. Intall dependencies
-> sudo apt-get install build-essential openssl libreadline6 libreadline6-dev curl git-core zlib1g zlib1g-dev libssl-dev libyaml-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev automake libtool bison subversion
-
-2. Install Ruby Version Manager (RVM)
-> bash < <(curl -s https://rvm.beginrescueend.com/releases/rvm-install-head )
-> cd .rvm/src/rvm/
-> ./install
-
-
-3. Restart the terminal and make sure everything works by typing 
-> type rvm | head -n1
-
-If you get: 'rvm is a function', everything should be OK.
+- Make sure the installation was successfull
+> ruby -v
+- if you get something like 'ruby 1.8.7 (2011-02-18 patchlevel 334)', everything is OK
+- Also make sure you got rubygems
+> gem -v
+- If you get something like '1.5.3', everything is OK
 
 
 
-6. Install ruby-1.8.7-p334
-> rvm install ruby-1.8.7-p334
-> rvm use ruby-1.8.7-p334
-> rvm default ruby-1.8.7-p334
+2. - Get Mysql
+> sudo apt-get install mysql-server libmysqlclient-dev
+> sudo gem install mysql --no-ri --no-rdoc -v=2.8.1
+> sudo gem install rails --no-ri --no-rdoc -v=2.3.5
+> sudo gem install ruby-hmac --no-ri --no-rdoc -v=0.4.0
+> sudo gem install rake --no-ri --no-rdoc -v=0.8.7
+> sudo gem install passenger --no-ri --no-rdoc -v=2.2.15
+> sudo gem install packet --no-ri --no-rdoc -v=0.1.15
+> sudo gem install chronic --no-ri --no-rdoc -v=0.4.1
+> sudo gem install grit --no-ri --no-rdoc -v=2.4.1
+> sudo gem install rainbow --no-ri --no-rdoc -v=1.1.1
+> sudo gem install xmpp4r --no-ri --no-rdoc -v=0.5
+> sudo gem install json --no-ri --no-rdoc -v=1.5.1
+> sudo gem install will_paginate --no-ri --no-rdoc -v=2.3.15
+> sudo apt-get install libxml2 libxml2-dev
+> sudo gem install libxml-ruby --no-ri --no-rdoc -v=2.0.6
+> sudo apt-get install imagemagick libmagick9-dev
+> sudo gem install rmagick --no-ri --no-rdoc -v=2.13.1
+
+3. - Get apache and make necessary settings
+> sudo apt-get install apache2-mpm-prefork apache2-prefork-dev libapr1-dev libaprutil1-dev
+> sudo passenger-install-apache2-module
+
+-Edit apache settings. Add something the lines you are instructed and visualrest settings to the file /etc/apache2/httpd.conf, something similar to this:
+
+LoadModule passenger_module /usr/local/lib/ruby/gems/1.8/gems/passenger-2.2.15/ext/apache2/mod_passenger.so
+PassengerRoot /usr/local/lib/ruby/gems/1.8/gems/passenger-2.2.15
+PassengerRuby /usr/local/bin/ruby
+
+DocumentRoot /var/www
+
+Listen 8443
+<VirtualHost *:8443>
+   RailsEnv production
+   ServerName localhost
+   DocumentRoot /home/heikki/visualrest/public
+</VirtualHost>
 
 
-7. Get VisualREST source from: git@github.com:hpeltola/VisualREST.git
-
-8. Install mysql
-> sudo apt-get install mysql-client mysql-server libmysqlclient15-dev
-
-9. Install Apache
-> sudo apt-get install apache2
-
-9,5 Install rmagick dependencies
-> sudo apt-get install libmagickwand-dev imagemagick
-
-10. Install Gems
-> gem install ruby-hmac --no-ri --no-rdoc
-> gem install rake --no-ri --no-rdoc -v=0.8.7
-> gem install rails --no-ri --no-rdoc -v=2.3.5
-> gem install passenger --no-ri --no-rdoc -v=2.2.15
-> gem install packet --no-ri --no-rdoc
-> gem install chronic --no-ri --no-rdoc
-> gem install mysql --no-ri --no-rdoc
-> gem install grit --no-ri --no-rdoc
-> gem install rainbow --no-ri --no-rdoc
-> gem install xmpp4r --no-ri --no-rdoc
-> gem install json --no-ri --no-rdoc
-> gem install will_paginate --no-ri --no-rdoc -v=2.3.15
-> gem install libxml-ruby --no-ri --no-rdoc
-> gem install rmagick --no-ri --no-rdoc
 
 
-11. Edit passenger settings
-> cd .rvm/gems/ruby-1.8.7-p334/gems/passenger-2.2.15/bin/
-> ./passenger-install-apache2-module 
 
-- You are instructed to install the following:
-> sudo apt-get install apache2-prefork-dev libapr1-dev libaprutil1-dev
-> ./passenger-install-apache2-module
 
-- Edit apache configuration files according to the instructions provided (something like this):
-> sudo nano /etc/apache2/httpd.conf 
-- And put lines similar to this in the file:
-   LoadModule passenger_module /home/heikki/.rvm/gems/ruby-1.8.7-p334/gems/passenger-2.2.15/ext/apache2/mod_passenger.so
-   PassengerRoot /home/heikki/.rvm/gems/ruby-1.8.7-p334/gems/passenger-2.2.15
-   PassengerRuby /home/heikki/.rvm/rubies/ruby-1.8.7-p334/bin/ruby
-
-- Also add something similar to this to the same file:
-
-  DocumentRoot /var/www
-
-  Listen 8443
-  <VirtualHost *:8443>
-     RailsEnv production
-     ServerName localhost
-     DocumentRoot /home/heikki/visualrest/public
-  </VirtualHost>
-
-12. You need to downgrade rubygems, because of a Active-support problem.
-> gem update --system 1.5.3
-
-13.  Edit the configuration file in config/database.yml for the database settings.
-- Create the database 
+4. Create the databases 
 > mysql -u root -p
 - put your mysql root password
 - inside mysql console, create the needed tables:
 >> create database visualrest_production;
+>> create database visualrest_development;
 
 
 
+5.  Edit the configuration file in config/database.yml for the database settings.
+- edit the used databases, usernames and passwords for production and development
+> cd visualrest/
+> nano config/database.yml 
 
-14. Install ejabberd, needed for XMPP support (these instructions are for localhost ejabberd server)
+
+
+6. Install ejabberd, needed for XMPP support:
 > sudo apt-get install ejabberd
 
-- go to the visualrest folder you got from the svn earlier:
-> rake db:migrate RAILS_ENV=production
+
+
+7. Create the needed XMPP accounts and edit the configuration file config/initializers/xmpp.rb for xmpp settings
+> nano config/initializers/xmpp.rb 
+- go to the visualrest folder:
 > rake backgroundrb:setup
-> script/backgroundrb start
+- You get a message about a problem in initializing metadatatypes (it's ok), and 'exists db/migrate' 'create db/migrate/...'
 
-15. Create the needed XMPP accounts and edit the configuration file config/initializers/xmpp.rb for xmpp settings
 
-16. Restart the server
+
+8. Now create the missing tables:
+> rake db:migrate RAILS_ENV=development
+> rake db:migrate RAILS_ENV=production
+- And again to create the missing metadatatypes
+> rake db:migrate RAILS_ENV=development
+> rake db:migrate RAILS_ENV=production
 > sudo /etc/init.d/apache2 restart
 
 
 
+9. Start the background worker
+> script/backgroundrb start
+- if there is an error about missing file, this might help
+> mkdir tmp
+> mkdir tmp/pids
+> script/backgroundrb start
 
 
+
+10. Restart the server and your server should be at http://localhost:8443
+> sudo /etc/init.d/apache2 restart
 

@@ -41,8 +41,8 @@ production:
   adapter: mysql
   encoding: utf8
   reconnect: false
-  database: visualrest_development
+  database: visualrest_production
   pool: 5
-  username: local
-  password: 1234
+  username: root
+  password: new-password
   socket: /var/run/mysqld/mysqld.sock
