@@ -3,6 +3,9 @@
 1. - Get ruby-1.8.7-p334 and rubygems-1.5.3
 > sudo apt-get install libruby1.8 zlib1g-dev libssl-dev libreadline5-dev build-essential
 
+- Install dependencies
+> sudo apt-get install build-essential openssl libreadline6 libreadline6-dev curl git-core zlib1g zlib1g-dev libssl-dev libyaml-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev automake libtool bison subversion
+
 - Get ruby-1.8.7-p334 and rubygems
 > wget ftp://ftp.ruby-lang.org/pub/ruby/1.8/ruby-1.8.7-p334.tar.gz
 > wget http://production.cf.rubygems.org/rubygems/rubygems-1.5.3.tgz
@@ -13,7 +16,7 @@
 > make
 > sudo make install
 > cd ../rubygems-1.5.3
-> sudo ruby setup
+> sudo ruby setup.rb
 
 - Make sure the installation was successfull
 > ruby -v
@@ -24,7 +27,7 @@
 
 
 
-2. - Get Mysql
+2. - Get Mysql and gems
 > sudo apt-get install mysql-server libmysqlclient-dev
 > sudo gem install mysql --no-ri --no-rdoc -v=2.8.1
 > sudo gem install rails --no-ri --no-rdoc -v=2.3.5
