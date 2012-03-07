@@ -41,7 +41,7 @@
 
 
         <span class="version_controllers">
-        <% if @file_type.include?("image") %>
+        <% if @file_type.include?("image") or @file_type.include?("video") %>
           <a href="javascript:facebookPublish('<%='/user/' + @user_username + '/device/' + @device_dev_name + '/files/' + @fullpath %>');" title="Publish in Facebook!">
             <img src="<%= "/thumbnails/facebook_logo_16.png" %>" alt="publish in Facebook" border="0"/>
           </a>
@@ -49,6 +49,9 @@
             <img src="<%= "/thumbnails/flickr_logo_16.png" %>" alt="publish in Facebook" border="0"/>
           </a>
         <% end %>
+        <a href="javascript:dropboxSendFile('<%='/user/' + @user_username + '/device/' + @device_dev_name + '/files/' + @fullpath %>');" title="Send to Dropbox!">
+          <img src="<%= "/thumbnails/dropbox_logo_16.png" %>" alt="send to Dropbox" border="0"/>
+        </a>
 
         <a href ="#" onclick="var show = 'false'; if( document.getElementById('metadatas_<%=@device_dev_name%>_<%= @fullpath.gsub(' ', '%20') %>').style.display == 'block'){show='true';} new Ajax.Request('/ajax/update/blob', {asynchronous:true, evalScripts:true, method:'post', parameters: 'showMetadata='+show+'&thumb_up=true&file_devfile_id=' + '<%= @file_devfile_id %>' + '&blob_update_id=' + '<%= @blob_id %>' + '&device_name=' + '<%= @device_dev_name %>' + '&username=' + '<%= @user_username%>' + '&device_id=' + '<%= @device_id %>' + '&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
           <img src="<%= "/thumbnails/thumb_up.png" %>" alt="Like" title="Like" border="0"/>

@@ -1643,6 +1643,11 @@ class ContextController < ApplicationController
   # Notification should only be transferred once per context
   #
   def self.notifyObservers(commit_devfiles, msg = "Content updated!")
+
+  # notifications are again turned on!!!
+  #  # Temporarily notifying about new content in contexts is turned off.
+  #  # Due to the amount of processing it needs.
+  #  return
     begin
       
       # {commit_id => [devfile_id, devfile_id, devfile_id...]}

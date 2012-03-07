@@ -49,6 +49,21 @@ class VirtualContainerManager
     
     begin
      
+
+      filesize = essence.length
+      filename.gsub!(/ /, '_')
+      
+      # if filesize is larger than about 5mb, increase git timeout
+      if filesize > 5000000
+        Grit::Git.git_timeout = 30
+        # if filesize is larger than about 100mb, throw an exception
+        if filesize > 100000000
+          raise Exception.new("File is too large to handle with git")
+        end
+      else
+        Grit::Git.git_timeout = 10
+      end
+     
       # create dir if it does not exist
       if not (File.exists?(@dev_path) && File.directory?(@dev_path))
         FileUtils.mkdir_p(@dev_path)      
@@ -69,6 +84,7 @@ class VirtualContainerManager
       File.open(path, "wb") { |f|   
         #puts f.to_s
         f.write(essence)
+        
       }
       sleep(0.2)
       @repo.add("#{@dev_path}#{filename}")

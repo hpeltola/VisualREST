@@ -29,18 +29,23 @@
 </div>
 <br/>
 
-<div id="import_content_from_flickr">
-<%= render :partial => "import_content_from_flickr" %>
+<div id="flickr_settings">
+<%= render :partial => "flickr_settings" %>
 </div>
 <br />
 
-<div id="import_content_from_fb">
-<%= render :partial => "import_content_from_fb" %>
+<div id="facebook_settings">
+<%= render :partial => "facebook_settings" %>
 </div>
 <br />
 
 <div id="dropbox_settings">
 <%= render :partial => "dropbox_settings" %>
+</div>
+<br />
+
+<div id="twitter_settings">
+<%= render :partial => "twitter_settings" %>
 </div>
 
 
@@ -160,7 +165,13 @@
   // END CONTAINER STUFF //
   
   
-  // BEGIN FLICKR STUFF //
+    
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //     BEGIN FLICKR STUFF 
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  
 
   function basicPopup(url) {
     popupWindow = window.open(url,'popUpWindow','height=640,width=800,left=70,top=70,resizable=yes,scrollbars=yes,toolbar=yes,menubar=no,location=no,directories=no, status=yes');
@@ -171,25 +182,57 @@
             parameters: 'hide=false&authenticity_token=<%= form_authenticity_token %>',
     });  
   }
-  
-  function deleteFlickrToken(){
-    new Ajax.Request('/user/<%= session[:username] %>/importContentFromFlickr', {asynchronous:true, evalScripts:true, method:'put',
-            parameters: 'hide=false&delete_flickr_token=true&authenticity_token=<%= form_authenticity_token %>',
-    });  
-  }
+
   
   function getPhotosFromFlickr(input_device, privacy_filter){
     var device = document.getElementById(input_device).value;
     var privacy = document.getElementById(privacy_filter).value;
     
     
-    new Ajax.Request('/user/<%= session[:username] %>/importContentFromFlickr', {asynchronous:true, evalScripts:true, method:'put',
-            parameters: 'hide=false&getPhotosFromFlickr=true&container_name='+device+'&privacy_setting='+privacy+'&authenticity_token=<%= form_authenticity_token %>'
+    new Ajax.Request('/user/<%= session[:username] %>/flickrImportPhotos', {asynchronous:true, evalScripts:true, method:'put',
+            parameters: 'hide=false&container_name='+device+'&privacy_filter='+privacy+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                if(data.status == 201){
+                    alert(data.responseText);
+                    window.location = "/user/<%= session[:username] %>/device/"+device+"/files"
+                }
+                else{
+                  alert(data.responseText);
+                }
+                },
+                onFailure: function(data){
+                    alert(data.responseText);
+                }
     }); 
     
   }
   
-  // END FLICKR STUFF //
+  
+  
+  
+   // Publish a photo to flickr. 
+ function flickrPublish(){    
+
+   var file_uri = document.getElementById('flickr_file_uri').value; 
+   // This one makes the request to flickr on server
+      new Ajax.Request('/user/<%= session[:username] %>/flickrPublishPhoto', {asynchronous:true, evalScripts:true, method:'post', 
+        parameters: 'file_uri=' + escape(file_uri) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+  }
+  
+  
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //      END FLICKR STUFF 
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////////
+   
   
   
   
@@ -207,12 +250,12 @@
   function addNewGroup(id){
     group = document.getElementById(id).value;
     
-    new Ajax.Request('/user/<%= session[:username] %>/addGroup/<%=%>', {asynchronous:true, evalScripts:true, method:'post',
-                parameters: 'groupname='+group+'&authenticity_token= <%= form_authenticity_token %>',
+    new Ajax.Request('/user/<%= session[:username] %>/group/'+group, {asynchronous:true, evalScripts:true, method:'put',
+                parameters: 'authenticity_token= <%= form_authenticity_token %>',
                 onSuccess: function(data){
-                  if(data.status == 200){
+                  if(data.status == 201){
                     //window.location.reload();
-                    new Ajax.Request('/ajax/groupsettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                    new Ajax.Request('/user/<%= session[:username] %>/groupSettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
                   }
                 }
     });    
@@ -226,15 +269,19 @@
   
   
   function deleteGroup(id){
-    var group = document.getElementById(id).innerHTML;
-    new Ajax.Request('/user/<%= session[:username] %>/deleteGroup', {asynchronous:true, evalScripts:true, method:'delete',
-                parameters: 'groupname='+group+'&authenticity_token=<%= form_authenticity_token %>',
-                onSuccess: function(data){ 
-                  if(data.status == 200){
-                    new Ajax.Request('/ajax/groupsettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+    var r=confirm("Are you sure you wish to delete this group?");
+    if (r==true)
+    {
+      var group = document.getElementById(id).innerHTML;
+      new Ajax.Request('/user/<%= session[:username] %>/deleteGroup', {asynchronous:true, evalScripts:true, method:'delete',
+                  parameters: 'groupname='+group+'&authenticity_token=<%= form_authenticity_token %>',
+                  onSuccess: function(data){ 
+                    if(data.status == 200){
+                      new Ajax.Request('/user/<%= session[:username] %>/groupSettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'});
+                    }
                   }
-                }
-    });
+      });
+    }
   }
   
   
@@ -374,31 +421,154 @@
   }
 
 
+ // Send file to dropbox
+ function dropboxSendFile(){    
+
+   var file_uri = document.getElementById('db_file_uri').value; 
+   var dropbox_path = document.getElementById('db_dropbox_path').value; 
+   // This one makes the request to facebook on server
+      new Ajax.Request('/user/<%= session[:username] %>/dropboxUpload', {asynchronous:true, evalScripts:true, method:'put', 
+        parameters: 'file_uri=' + escape(file_uri) + '&dropbox_path='+escape(dropbox_path)+'&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+  }
+
+
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //  TWITTER STUFF
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+  function publishInTwitter(){
+    var message  = document.getElementById('input_twitter_publish').value;
+
+    if( message == "" ){
+      alert('Error reading input!');
+      return;
+    }
+    
+   // Publish in twitter and show response in popup alert
+      new Ajax.Request('/user/<%= session[:username] %>/twitterPublish', {asynchronous:true, evalScripts:true, method:'post', 
+        parameters: 'message=' + escape(message) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+
+  }
+  
+  
+  function textCounter(field_id,cntfield_id,maxlimit) {
+    var field  = document.getElementById(field_id);
+    var cntfield  = document.getElementById(cntfield_id);
+    if (field.value.length > maxlimit) // if too long...trim it!
+      field.value = field.value.substring(0, maxlimit);
+    // otherwise, update 'characters left' counter
+    else
+    cntfield.value = maxlimit - field.value.length;
+  }
 
 
 
 
 
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //  FACEBOOK STUFF
+  //
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+
+ // Publish a photo to facebook. 
+ function facebookPublish(){    
+
+   var file_uri = document.getElementById('fb_file_uri').value; 
+   // This one makes the request to facebook on server
+      new Ajax.Request('/user/<%= session[:username] %>/facebookPublishPhoto', {asynchronous:true, evalScripts:true, method:'post', 
+        parameters: 'file_uri=' + escape(file_uri) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+  }
+
+  function facebookWriteOnWall(){
+    var message  = document.getElementById('facebook_wall_message').value;
+
+    if( message == "" ){
+      alert('Error reading input!');
+      return;
+    }
+    
+   // Publish in twitter and show response in popup alert
+      new Ajax.Request('/user/<%= session[:username] %>/facebookWriteOnWall', {asynchronous:true, evalScripts:true, method:'post', 
+        parameters: 'message=' + escape(message) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+
+  }
 
 
 
+ // Check if auth token is still valid!
+ function connected(service){    
+
+      new Ajax.Request('/user/<%= session[:username] %>/'+service+'Connected', {asynchronous:true, evalScripts:true, method:'get', 
+        parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          if( data.status == 200){
+            alert(data.responseText + '\nStatus code: ' + data.status);
+          }
+          else{
+            alert(data.responseText + '\nStatus code: ' + data.status);
+          }
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+  }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  // Import selected albums
+  function facebookImportSelectedAlbums(device_name, album_id){
+    
+    var device = document.getElementById(device_name).value;
+    
+    new Ajax.Request('/user/<%= session[:username] %>/facebookImportAlbum', {asynchronous:true, evalScripts:true, method:'put',
+            parameters: 'hide=false&container_name='+device+'&album_id='+album_id+'&authenticity_token=<%= form_authenticity_token %>',
+                onSuccess: function(data){ 
+                if(data.status == 200){
+                    alert(data.responseText);
+                }
+                else{
+                  alert(data.responseText);
+                }
+                },
+                onFailure: function(data){
+                  alert(data.responseText);
+                }
+    }); 
+  }
 
 
 

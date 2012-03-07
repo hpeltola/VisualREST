@@ -1,0 +1,103 @@
+<div id="settings_top">
+<!--<span>Import content from flickr</span> &nbsp; -->
+
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/flickrSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/flickr_logo.png" alt="Flickr logo" />
+  </a>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/flickrSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Flickr integration</span>
+<%else%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/flickrSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/flickr_logo.png" alt="Flickr logo" />
+  </a>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/flickrSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+  <% if @flickr_url %>
+  <div id="red-box">
+    <p>You need to give authorization to access your Flickr account!</p>
+    <a href="<%=@flickr_url%>">Authorize</a>
+  </div>
+
+
+  <%else%>
+  <fieldset>
+  <legend>Flickr account</legend>
+  
+  Username: <a href="http://www.flickr.com/people/<%=@flickr_data.s_username%>"><%=@flickr_data.s_username%><br /></a>
+  User ID: <a href="<%=@flickr_data.s_user_id%>"><%=@flickr_data.s_user_id%></a><br /><br />
+    <center>        
+      <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/flickrDeleteToken', '/user/<%= session[:username] %>/flickrSettings/')" style="float: right;">Delete access token</button>      
+      <button style="align:center;" onclick="connected('flickr')">Test access token</button>
+    </center>
+  </fieldset>
+  
+  
+  
+  <fieldset>
+  <legend>Import from Flickr</legend>
+    <table>
+      <tr>
+        <td>Select container:</td>
+        <td>
+          <% if @virtualUserDevices.size == 0 %>
+            <span style='color:red'>You need virtual container</span>
+          <% else %>
+            <select id="input_device">
+            <% @virtualUserDevices.each do |x| %>
+              <% if x.dev_name == "flickr_container"%>
+                <option value="<%= x.dev_name%>" selected="selected"><%= x.dev_name%></option>
+              <% else%>
+                <option value="<%= x.dev_name%>"><%= x.dev_name%></option>
+              <% end %>
+            <% end %>
+            </select>
+          <% end %>
+          
+        </td>
+      </tr>
+      <tr>
+        <td>Your photos to import:</td>
+        <td>
+          <select id="privacy_filter">
+            <option value="public" selected="selected">Public photos</option>
+            <option value="private">Private photos</option>
+          </select>
+        </td>
+      </tr>
+      
+    </table>  
+    <center>
+      <button onclick="getPhotosFromFlickr('input_device', 'privacy_filter')">Import photos from Flickr</button>
+    </center>
+  </fieldset>
+
+  <fieldset>
+    <legend>Publish photo to Flickr</legend>
+    <center>
+      file_uri: <input id="flickr_file_uri" size=60><br />
+      <button style="align:center;" onclick="flickrPublish()">Publish to Flickr</button>  <br />
+      
+    </center>
+  </fieldset>
+
+
+  
+  <%end%>
+  
+<%end%>
+  
+  
+  
+  
+  

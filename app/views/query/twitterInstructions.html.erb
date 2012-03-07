@@ -5,17 +5,24 @@
 <%end%>
 
 <h1>Twitter integration</h1>
-<p>You can write tweets using VisualREST. The tweets can have links to your public content in VisualREST.
-</p>
-
-<h2>Get authorization token to Twitter</h2>
-<p>First you need to give VisualREST authorization to access your Twitter account. <br />
-  <ul>  
-    <li>Go to 'Settings->Twitter' and click 'authorize'.</li>
-    <li>You will be redirected to Facebook page.</li>
-    <li>When the authorization is granted, you will be redirected back to VisualREST.</li>
+<p>Users can:
+  <ul>
+    <li>Publish tweets with links to files in VisualREST</li>
   </ul>
 </p>
+
+
+
+<h2>Link Twitter account with VisualREST</h2>
+<p>
+  Authorization to user's Twitter account has three steps:
+  <ul>
+    <li>Go to: http://visualrest.cs.tut.fi/user/{username}/twitter_authorization <br />(or Settings->Twitter->Authorize)</li>
+    <li>User is directed to Twitter website for authorizing access to the Twitter account</li>
+    <li>Twitter access token is stored in VisualREST</li>
+  </ul>
+</p>
+
 
 
 <br /><br />
@@ -65,3 +72,6 @@
   -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
   -F i_am_client=true  
 </p>
+
+
+

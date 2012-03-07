@@ -5,17 +5,25 @@
 <%end%>
 
 <h1>Dropbox integration</h1>
-<p>You can keep one folder from your dropbox account synchronized with a virtual container.
-</p>
-
-<h2>Get authorization token to Dropbox</h2>
-<p>First you need to give VisualREST authorization to access content from your Dropbox account. <br />
-  <ul>  
-    <li>Go to 'Settings->Dropbox' and click 'authorize'.</li>
-    <li>You will be redirected to Dropbox page.</li>
-    <li>When the authorization is granted, you will be redirected back to VisualREST.</li>
+<p>Users can:
+  <ul>
+    <li>Keep a folder synchronized with VisualREST</li>
+    <li>Send files to Dropbox</li>
   </ul>
 </p>
+
+
+<h2>Link Dropbox account with VisualREST</h2>
+<p>
+  Authorization to user's Dropbox account has three steps:
+  <ul>
+    <li>Go to: http://visualrest.cs.tut.fi/user/{username}/dropbox_authorization <br />(or Settings->Dropbox->Authorize)</li>
+    <li>User is directed to Dropbox website for authorizing access to the Dropbox account</li>
+    <li>Dropbox access token is stored in VisualREST</li>
+  </ul>
+</p>
+
+
 
 
 <br /><br />
@@ -56,3 +64,33 @@
   -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
   -F i_am_client=true  
 </p>
+
+
+
+
+<br /><br />
+
+<h2>Send file to Dropox</h2>
+<p>
+  A file stored in VisualREST can be sent to Dropbox. The file essence must be already uploaded to VisualREST server.
+</p>
+
+<h3>HTTP request</h3>
+  <li><b>method:</b>     PUT</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/dropboxUpload</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+    <li>file_uri - uri to the file in VisualREST that will be sent to Dropbox</li>
+    <li>dropbox_path - Path to the folder in Dropbox, where the file will be saved to</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br />
+  curl -X PUT http://visualrest.cs.tut.fi/user/heikki/dropboxUpload
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true  -F file_uri=http://visualrest.cs.tut.fi/user/heikki/device/android_container/files/IMG_20120306_130621.jpg
+  -F dropbox_path=/visualrest_upload/
+</p>
+
+

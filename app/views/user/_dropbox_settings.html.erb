@@ -1,16 +1,21 @@
 <div id="settings_top">
-<span>Dropbox Settings</span>
+<!--<span>Dropbox Settings</span> &nbsp; -->
+
 <%if params["hide"] == nil or params["hide"] == "true"%>
-  <%puts "hide"%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/dropboxSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/dropbox_logo.png" alt="Dropbox logo" /> 
+  </a>
   <span class="right">
   <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/dropboxSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
     edit
   </a>
   </span>
   </div>
-  <span class="subtext">Import content from Dropbox to VisualREST</span>
+  <span class="subtext">Dropbox integration</span>
 <%else%>
-  <%puts "show"%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/dropboxSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/dropbox_logo.png" alt="Dropbox logo" /> 
+  </a>
   <span class="right">
   <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/dropboxSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
     hide
@@ -21,21 +26,55 @@
   
 <%if not @db_auth_token%>
   <div id="red-box">
-    <p>You need to get authentication token first!</p>
-
-
-    Username <input id="uname" value="">
-    Password <input id="passw" value="">
+    <p>You need to give authorization to access your Dropbox account!</p>
     
-    <br />
-    <button onclick="getDBtoken()">Get Dropbox access token</button>
-    
+    <% if not @dropbox_url %>
+      Problem initializing your connection to Dropbox!
+    <%else%>
+      <a href="<%=@dropbox_url%>">Authorize</a><br />
+      <!--Open popup window to <button onclick="basicPopup('<%=@dropbox_url%>');return false">authorize!</button>-->
+    <%end%>
+
   </div>
 <%end%>
 
 
 
 <%if @db_auth_token %>
+
+  <%if @db_authenticated %>
+    <fieldset>
+      <legend>Dropbox account</legend>
+      <table>
+        <tr>
+          <th>User:</th>
+          <td><%=@db_display_name%></td>
+        </tr>
+        <tr>
+          <th>Email:</th>
+          <td><%=@db_email%></td>
+        </tr>
+        <tr>
+          <th>ID:</th>
+          <td><%=@db_uid%></td>
+        </tr>
+      </table>
+      
+      <center>        
+        <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/dropboxDeleteToken', '/user/<%= session[:username] %>/dropboxSettings/')" style="float: right;">Delete DropBox token</button>      
+        <button style="align:center;" onclick="connected('dropbox')">Test access token</button>
+      </center>
+      
+    </fieldset>
+  
+  <%else%>
+    <p>PROBLEM WITH CONNECTING TO DROPBOX!</p>
+      <center>        
+        <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/dropboxDeleteToken', '/user/<%= session[:username] %>/dropboxSettings/')" style="float: right;">Delete DropBox token</button>      
+        <button style="align:center;" onclick="connected('dropbox')">Test access token</button>
+      </center>
+  <%end%>
+
 
   <fieldset>
   <legend>You are polling these dropbox folders:</legend>
@@ -58,8 +97,6 @@
       </table>
   </fieldset>
 
-<%puts "count: " + @folders_and_containers.count.to_s %>
-
 <%if @folders_and_containers.count < 1 %>
 
 <% form_tag( "/user/" + session[:username] + "/dbCreateDirPoller", :method => "post" ) do %>
@@ -79,7 +116,10 @@
     Select container:
       <select name="container_name" >      
       <% @v_containers.each do |vc| %>
-        <option value="<%=vc.dev_name%>" <%if vc.dev_name == "dropbox_container" %>selected="selected"<%end%> ><%=vc.dev_name%></option>
+        <%if vc.dev_name == "dropbox_container" %>
+        <!-- Only dropbox_container allowed, for now atleast -->
+          <option value="<%=vc.dev_name%>" selected="selected" ><%=vc.dev_name%></option>
+        <%end%>
       <% end %>
       </select>
     <%end%>
@@ -100,14 +140,17 @@
   </div>
 <%end%> <!-- count > 1 -->
 
-
   <fieldset>
-  <legend>Delete DropBox access token</legend>
-      <center>        
-      <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/dbDeleteToken', '/user/<%= session[:username] %>/dropboxSettings/')" style="float: right;">Delete DropBox token</button>      
-      </center>
-    <p><i>If cannot see dropbox folders, try deleting the access token and getting a new one!</i></p>
+    <legend>Send file to Dropbox</legend>
+    <center>
+      <p title="uri to the file in VisualREST that will be sent to Dropbox">file_uri: <input id="db_file_uri" size=60></p>
+      <p title="path to folder in dropbox where the file is saved">Dropbox path: <input id="db_dropbox_path" size=54></p>
+      <button style="align:center;" onclick="dropboxSendFile()">Send to Dropbox</button>  <br />
+      
+    </center>
+    
   </fieldset>
+
 
 <%end%>
 

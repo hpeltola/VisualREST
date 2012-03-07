@@ -5,13 +5,21 @@
 <%end%>
 
 <h1>Facebook integration</h1>
+<p>Users can:
+  <ul>
+    <li>Import photo albums from Facebook</li>    
+    <li>Publish photos and videos to Facebook</li>
+    <li>Write to Facebook walll</li>
+  </ul>
+</p>
 
-<h2>Get authorization token to Facebook</h2>
-<p>First you need to give VisualREST authorization to access content from your Facebook account. <br />
-  <ul>  
-    <li>Go to 'Settings->Facebook' and click 'authorize'.</li>
-    <li>You will be redirected to Facebook page.</li>
-    <li>When the authorization is granted, you will be redirected back to VisualREST.</li>
+<h2>Link Facebook account with VisualREST</h2>
+<p>
+  Authorization to user's Facebook account has three steps:
+  <ul>
+    <li>Go to: http://visualrest.cs.tut.fi/user/{username}/facebook_authorization <br />(or Settings->Facebook->Authorize)</li>
+    <li>User is directed to Facebook website for authorizing access to the Facebook account</li>
+    <li>Facebook access token is stored in VisualREST</li>
   </ul>
 </p>
 
@@ -33,9 +41,9 @@
 
 <br /><br />
 
-<h2>Publish photo to Facebook</h2>
+<h2>Publish photo or video to Facebook</h2>
 <p>
-  Photos can be published to Facebook using <b>HTTP request</b> or <b>using the form in 'settings->Facebook->Publish photo to Facebook'</b> 
+  Photos and videos can be published to Facebook using <b>HTTP request</b> or <b>using the form in 'settings->Facebook->Publish photo to Facebook'</b> 
   or <b>in file search using the Facebook-logo.</b>
 </p>
 
@@ -106,3 +114,7 @@
   -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
   -F i_am_client=true  
 </p>
+
+
+
+

@@ -1,0 +1,122 @@
+<div id="settings_top">
+<!--<span>Import content from Facebook</span> &nbsp; -->
+
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/facebookSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/facebook_logo.png" alt="Facebook logo" />
+  </a>
+  <span class="right">  
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/facebookSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Facebook integration</span>
+<%else%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/facebookSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/facebook_logo.png" alt="Facebook logo" />
+  </a>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/facebookSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+  
+<%if not @fb_auth_token%>
+  <div id="red-box">
+    <p>You need to give authorization to access your Facebook account!</p>
+    <a href="<%=@facebook_authentication_url%>">Authorize</a>
+  </div>
+<%end%>
+
+
+
+<%if @fb_auth_token %>
+
+
+  <fieldset>
+  <legend>Facebook account</legend>
+    <table>
+      <tr>
+        <th>Userame:</th>
+        <td><%=@fb_auth_token.s_username%></td>
+      </tr>
+      <tr>
+        <th>User ID:</th>
+        <td><%=@fb_auth_token.s_user_id%></td>
+      </tr>
+    </table><br />
+     <center>        
+       <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/facebookDeleteToken', '/user/<%= session[:username] %>/facebookSettings/')" style="float: right;">Delete Facebook access token</button>      
+       <button style="align:center;" onclick="connected('facebook')">Test access token</button>
+     </center>
+  </fieldset>
+
+
+
+   <fieldset>
+    <legend>Import Facebook album</legend>
+    <table id="album_table">
+      <tr>
+        <td align="right">Select container:</td>
+        <td>
+          <%if @v_containers%>
+            <select id="input_device" >      
+            <% @v_containers.each do |vc| %>
+              <option value="<%=vc.dev_name%>" <%if vc.dev_name == "facebook_container" %>selected="selected"<%end%> ><%=vc.dev_name%></option>
+            <% end %>
+            </select>
+          <%end%>
+        </td>
+      </tr>
+      <tr><td>&nbsp;</td></tr>
+      
+      <% @photo_albums.each do |name, id| %>
+      <tr>
+        <td align="right"><%= name %></td>
+
+        <td>
+          <button style="align:center;" onclick="facebookImportSelectedAlbums('input_device', '<%=id%>')">Import this album</button>
+        </td>
+      </tr>
+      <% end %>
+    </table>    
+  </fieldset>
+
+
+
+
+  <fieldset>
+    <legend>Publish photo to Facebook</legend>
+    <center>
+      file_uri: <input id="fb_file_uri" size=60><br />
+      <button style="align:center;" onclick="facebookPublish()">Publish to Facebook</button>  <br />
+      
+    </center>
+  </fieldset>
+
+
+  <fieldset>
+    <legend>Write on Facebook wall</legend>
+    <center>
+      <textarea id="facebook_wall_message" maxlength="2000" style="width: 482px; height: 56px;"></textarea><br />
+      <button style="align:center;" onclick="facebookWriteOnWall()">Write on Facebook wall</button>  <br />
+      
+    </center>
+  </fieldset>
+
+
+
+<%end%>
+
+
+
+  
+<%end%>
+  
+  
+  
+  
+  

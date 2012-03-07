@@ -5,21 +5,25 @@
 <%end%>
 
 <h1>Flickr integration</h1>
-<p>You can import your public/private photos from your Flickr account to VisualREST. 
-  Also you can publish your photos from VisualREST to Flickr. 
-</p>
-
-<h2>Get authorization token to Flickr</h2>
-<p>First you need to give VisualREST authorization to access content from your Flickr account. <br />
-  <ul>  
-    <li>Go to 'Settings->Flickr' and press 'authorize!'.</li>
-    <li>A popup window will ask you to authorize VisualREST.</li>
-    <li>When the authorization is granted, you will need to copy the provided code</li>
-    <li>Copy the code to the provided box in 'Settings->Flickr' and press 'send'</li>
-    <li>Your Flickr authorization will be saved on VisualREST.</li>
-    <li>You can remove authorization token by pressing 'Delete access token'-button</li>
+<p>Users can:
+  <ul>
+    <li>Import files from Flickr</li>
+    <li>Publish photos and videos to Flickr</li>
   </ul>
 </p>
+
+
+
+<h2>Link Flickr account with VisualREST</h2>
+<p>
+  Authorization to user's Flickr account has three steps:
+  <ul>
+    <li>Go to: http://visualrest.cs.tut.fi/user/{username}/flickr_authorization <br />(or Settings->Flickr->Authorize)</li>
+    <li>User is directed to Flickr website for authorizing access to the Flickr account</li>
+    <li>Flickr access token is stored in VisualREST</li>
+  </ul>
+</p>
+
 
 
 <br /><br />
@@ -39,9 +43,9 @@
 
 <br /><br />
 
-<h2>Publish photo to Flickr</h2>
+<h2>Publish photo or video to Flickr</h2>
 <p>
-  Photos can be published to Flick using <b>HTTP request</b> or <b>using the form in 'settings->Flickr->Publish photo to Flickr'</b> 
+  Photos and videos can be published to Flickr using <b>HTTP request</b> or <b>using the form in 'settings->Flickr->Publish photo to Flickr'</b> 
   or <b>in file search using the Flickr-logo.</b>
 </p>
 
@@ -84,3 +88,6 @@
   -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
   -F i_am_client=true  
 </p>
+
+
+

@@ -198,11 +198,14 @@ ActionController::Routing::Routes.draw do |map|
   ## FACEBOOK ##
   map.connect 'user/:username/facebookSettings', :controller => 'user', :action => 'facebookSettings'
   map.connect '/facebook_callback', :controller => 'user', :action => 'facebook_callback'
-  map.connect 'user/:username/facebookPublishPhoto', :controller => 'user', :action => 'facebookPublishPhoto', :conditions => {:method => :post}
+  map.connect 'user/:username/facebookPublishPhoto', :controller => 'user', :action => 'facebookPublishPhoto'
   map.connect 'user/:username/facebookWriteOnWall', :controller => 'user', :action => 'facebookWriteOnWall', :conditions => {:method => :post}
   map.connect 'user/:username/facebookDeleteToken', :controller => 'user', :action => 'facebookDeleteToken', :conditions => {:method => :delete}
   map.connect 'user/:username/facebookConnected', :controller => 'user', :action => 'facebookConnected', :conditions => {:method => :get}
   map.connect 'user/:username/facebookImportAlbum', :controller => 'user', :action => 'facebookImportAlbum'
+  # Facebook authorization for client programs
+  map.connect 'user/:username/facebook_authorization', :controller => 'user', :action => 'facebook_client_authorization'
+  map.connect 'user/:username/facebook_client_callback', :controller => 'user', :action => 'facebook_client_callback'
 
   map.connect 'user/:username/fbTestingStuff', :controller => 'user', :action => 'fbTestingStuff', :conditions => {:method => :get}
   map.connect 'user/:username/fbTestingStuff2', :controller => 'user', :action => 'fbTestingStuff2', :conditions => {:method => :get}
@@ -215,6 +218,11 @@ ActionController::Routing::Routes.draw do |map|
   map.connect 'user/:username/dropboxConnected', :controller => 'user', :action => 'dropboxConnected', :conditions => {:method => :get}
   map.connect 'user/:username/dbCreateDirPoller', :controller => 'user', :action => 'dbCreateDirPoller'
   map.connect 'user/:username/dbDeletePoller/:ud_id', :controller => 'user', :action => 'dbDeletePoller'
+  map.connect 'user/:username/dropboxUpload', :controller => 'user', :action => 'dropboxUpload', :conditions => {:method => :put}
+  # Dropbox authorization for client programs
+  map.connect 'user/:username/dropbox_authorization', :controller => 'user', :action => 'dropbox_client_authorization'
+  map.connect 'user/:username/dropbox_client_callback', :controller => 'user', :action => 'dropbox_client_callback'
+
 
   ## TWITTER ##
   map.connect 'user/:username/twitterSettings', :controller => 'user', :action => 'twitterSettings'
@@ -222,6 +230,10 @@ ActionController::Routing::Routes.draw do |map|
   map.connect 'user/:username/twitterDeleteToken', :controller => 'user', :action => 'twitterDeleteToken', :conditions => {:method => :delete}
   map.connect 'user/:username/twitterPublish', :controller => 'user', :action => 'twitterPublish', :conditions => {:nethod => :post}
   map.connect 'user/:username/twitterConnected', :controller => 'user', :action => 'twitterConnected', :conditions => {:method => :get}
+  # Twitter authorization for client programs
+  map.connect 'user/:username/twitter_authorization', :controller => 'user', :action => 'twitter_client_authorization'
+  map.connect 'user/:username/twitter_client_callback', :controller => 'user', :action => 'twitter_client_callback'
+
   
   ## FLICKR ##
   map.connect 'user/:username/flickrSettings', :controller => 'user', :action => 'flickrSettings'
@@ -230,6 +242,9 @@ ActionController::Routing::Routes.draw do |map|
   map.connect 'user/:username/flickrDeleteToken', :controller => 'user', :action => 'flickrDeleteToken', :conditions => {:method => :delete}
   map.connect 'user/:username/flickrImportPhotos', :controller => 'user', :action => 'flickrImportPhotos'
   map.connect 'user/:username/flickrPublishPhoto', :controller => 'user', :action => 'flickrPublishPhoto'
+  # Flickr authorization for client programs
+  map.connect 'user/:username/flickr_authorization', :controller => 'user', :action => 'flickr_client_authorization'
+  map.connect 'user/:username/flickr_client_callback', :controller => 'user', :action => 'flickr_client_callback'
  
  
   # Observers for files
@@ -365,6 +380,9 @@ ActionController::Routing::Routes.draw do |map|
   map.connect 'site/help/twitterInstructions', :controller => 'query', :action => 'twitterInstructions'
   map.connect 'site/help/userInstructions', :controller => 'query', :action => 'userInstructions'
   map.connect 'site/help/containerInstructions', :controller => 'query', :action => 'containerInstructions'
+  map.connect 'site/help/rubyContainer', :controller => 'query', :action => 'rubyContainer'
+  map.connect 'site/help/androidContainer', :controller => 'query', :action => 'androidContainer'
+  
   
   # The old documentation
   map.connect 'doc/app/*filepath', :action => 'doc', :controller => 'user'

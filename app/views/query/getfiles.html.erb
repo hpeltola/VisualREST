@@ -71,8 +71,7 @@
    // Publish a photo to facebook. 
  function facebookPublish(file_uri){    
 
-  // var file_uri = document.getElementById('fb_file_uri').value; 
-   // This one makes the request to facebook on server
+   // This one makes the request to facebook through VisualREST server
       new Ajax.Request('/user/<%= session[:username] %>/facebookPublishPhoto', {asynchronous:true, evalScripts:true, method:'post', 
         parameters: 'file_uri=' + escape(file_uri) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
         onSuccess: function(data){ 
@@ -83,11 +82,10 @@
         }
       });
   }
-     // Publish a photo to facebook. 
+ // Publish a photo to flickr. 
  function flickrPublish(file_uri){    
 
-  // var file_uri = document.getElementById('fb_file_uri').value; 
-   // This one makes the request to facebook on server
+   // This one makes the request to flickr through VisualREST server
       new Ajax.Request('/user/<%= session[:username] %>/flickrPublishPhoto', {asynchronous:true, evalScripts:true, method:'post', 
         parameters: 'file_uri=' + escape(file_uri) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
         onSuccess: function(data){ 
@@ -98,5 +96,21 @@
         }
       });
   }
+  
+ // Send file to Dropbox.
+ function dropboxSendFile(file_uri){    
+
+   // This one makes the request to dropbox through VisualREST server
+      new Ajax.Request('/user/<%= session[:username] %>/dropboxUpload', {asynchronous:true, evalScripts:true, method:'put', 
+        parameters: 'file_uri=' + escape(file_uri) + '&dropbox_path=/visualrest_upload/&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+  }
+  
   
 </script>

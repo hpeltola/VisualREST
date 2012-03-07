@@ -1,0 +1,122 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Container for Android</h1>
+<p>
+  Use cases:
+  <ul>
+    <li>Send metadata of a photo to VisualREST</li>
+    <li>Automatically listen for new photos and send metadata to VisualREST.</li>
+    <li>VisualREST requests the essence of the photo, and it will be uploaded.</li>
+    <li>Send the whole photo to a virtual container in VisualREST.</li>
+  </ul>
+</p>
+
+<h2>Tutorial</h2>
+<p>
+  Container program for Android can be <a href="/zipped_client/android_client/VisualRESTClient.apk">downloaded</a>.
+  The program has been tested on <b>Samsung Galaxy Nexus</b>.
+  After the program is installed on your device and started, you will see the main window.
+</p>
+
+<img src="/zipped_client/android_client/20120308_002s.jpg" alt="menu page" width="500"/><br /><br /><br />
+
+
+<p>
+  Go to 'VisualREST account settings' and insert your VisualREST username & password and press save.
+</p>
+
+<img src="/zipped_client/android_client/20120308_003s.jpg" alt="menu page" width="500"/><br /><br /><br />
+
+<p>
+  When you return to the main window, you will see that the hourglass has 
+  changed to notify you that the username/password combination is correct.
+</p>
+
+<img src="/zipped_client/android_client/20120308_004s.jpg" alt="menu page" width="500"/><br /><br /><br />
+
+<p>
+  Next go to 'Device settings' and give a name for your device.
+</p>
+
+<img src="/zipped_client/android_client/20120308_006s.jpg" alt="menu page" width="500"/><br /><br /><br />
+
+
+<p>
+  Press 'register this device as a container'.
+</p>
+
+<img src="/zipped_client/android_client/20120308_007s.jpg" alt="menu page" width="500"/><br /><br /><br />
+
+
+<p>
+  When you return to main menu, you will notice that your device is 
+  successfully registered and the three buttons below are also enabled.
+</p>
+
+<img src="/zipped_client/android_client/20120308_009s.jpg" alt="menu page" width="500"/><br /><br /><br />
+
+<p>
+  You can turn on 'automatic metadata upload', meaning that metadata of all new photos taken with the camera 
+  are automatically uploaded to the VisualREST server.
+  When the XMPP service is turned on the server can send requests to your device, such as upload thumbnails
+  or essence of content.
+</p>
+
+<img src="/zipped_client/android_client/20120308_011s.jpg" alt="menu page" width="500"/><br /><br /><br />
+
+<p>
+  You can also manually upload content to VisualREST. In the photo gallery you will notice the possibility to
+  upload metadata of a photo to VisualREST (the actual essence of the photo is not sent until explicitly requested with XMPP).
+  Also you can upload the whole photo to VisualREST (the photo is stored on a virtual container called 'android_container').
+</p>
+
+<img src="/zipped_client/android_client/20120308_012s.jpg" alt="menu page" height="500"/>
+<img src="/zipped_client/android_client/20120308_013s.jpg" alt="menu page" height="500"/><br /><br /><br />
+
+
+
+<h2>Container files</h2>
+
+<p>
+  Go to 'Container Files' on the menu page of the program.
+  Container files view shows all photos and videos on the device.
+  Tick the box next to a thumbnail and press the button at the bottom to add files to the container program.
+  Files added to the container program have a green border.
+  
+</p>
+<img src="/zipped_client/android_client/20120503_020s.jpg" alt="menu page" height="500"/><br /><br /><br />
+
+<p>
+  By pressing a thumbnail with green borders, you can edit metadata and manage the file.
+  Uploading essence of a file can be initiated. 
+  When the essence is uploaded, you can also send the file to external services (Facebook, Flickr or Dropbox).
+</p>
+<img src="/zipped_client/android_client/20120503_021s.jpg" alt="menu page" height="500"/><br /><br />
+<img src="/zipped_client/android_client/20120503_022s.jpg" alt="menu page" height="500"/><br /><br /><br />
+
+
+<h2>Home screen widget</h2>
+<p>
+  A widget can be added to your home screen. The widget shows the status of the following services: 
+  <ul>
+    <li>Automatic metadata upload for new photos taken by the camera.</li>
+    <li>XMPP service. The possibility to receive XMPP messages. This is needed when the server requests thumbnails and essence from the device.</li>
+  </ul>
+  
+</p>
+  
+<img src="/zipped_client/android_client/20120321_007s.jpg" alt="menu page" height="500"/><br /><br /><br />
+
+<p>
+  The service status can be changed by pressing the icon/text.<br />
+  
+  <ul>
+    <li><img src="/thumbnails/vR_online_2_128.png" alt="menu page" height="64"/> - The service is turned off.</li>
+    <li><img src="/thumbnails/vR_offline.png" alt="menu page" height="64"/> - The service is turned on.</li>
+  </ul>
+</p>
+

@@ -78,7 +78,6 @@ class DevfileController < ApplicationController
     @metadatatypes = MetadataType.find(:all, :order => "name ASC" )
     
     if params[:format] == "yaml" or params[:format] == "json" 
-      puts "YAMLII"
       @yaml_results = {}
       @yaml_results.merge!({brp.get_uri => brp.to_yaml})  
     end
@@ -88,7 +87,6 @@ class DevfileController < ApplicationController
       if params[:format] == nil
         format.html {render :getfile, :layout=>true}
       else
-        puts "no tänne kyl tultiin"
         format.html {render :getfile, :layout=>true}      
         format.atom {render :getfile, :layout=>false }
         format.yaml {render :text => YAML.dump(@yaml_results), :layout=>false }

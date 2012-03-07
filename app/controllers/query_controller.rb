@@ -260,6 +260,14 @@ class QueryController < ApplicationController
     # Get all metadatatypes
     @results = MetadataType.find(:all, :order => "updated_at ASC" )
         
+    if params[:format] && params[:format]== "json" || params[:format] == "yaml"
+      @yaml_results = {}
+      @results.each do |result|
+        @yaml_results.merge!({result.name => result.value_type})
+      end
+      
+    end
+        
     # host parameter, needed when creating atom-feed
     if request.ssl?
       @host = "https://#{request.host}"
@@ -279,6 +287,8 @@ class QueryController < ApplicationController
       else
         format.html {render :getmetadatatypes, :layout=>true }
         format.atom {render :getmetadatatypes, :layout=>false }
+        format.yaml {render :text => YAML.dump(@yaml_results), :layout=>false }
+        format.json {render :text => JSON.dump(@yaml_results), :layout=>false }
       end
     end
   end
@@ -1139,8 +1149,13 @@ puts "S C: #{@context.to_s}"
         @yaml_results = {}
       end
       
+      @json_ordered = false
+      @json_results = "{  "
+      
       @results.each do |df|
         begin
+          
+          @json_temp = {}
           
           # For polling the contexts from localhost
           if params[:localhost_context_polling] == "true"
@@ -1162,7 +1177,13 @@ puts "S C: #{@context.to_s}"
               # If requesting files
               id = @host+url = "/user/" + df.username + "/device/" + df.dev_name + "/files" + df.path + df.name
               brp = BlobRepresentation.new(df.blob_id).to_yaml
-              @yaml_results.merge!({id => brp})        
+              @yaml_results.merge!({id => brp})    
+              
+              @json_ordered = true    
+              @json_temp.merge!({id => brp})
+              @json_results += JSON.dump({id => brp})[1..-2]
+              @json_results += "," 
+              
             end
           end
           
@@ -1170,6 +1191,8 @@ puts "S C: #{@context.to_s}"
           putsE(e)
         end
       end
+      @json_results = @json_results[0..-2]
+      @json_results += "}"
       #puts @yaml_results.to_s
     end
 
@@ -1220,6 +1243,13 @@ puts "S C: #{@context.to_s}"
         format.html {render @render}
         format.atom { render @render, :layout=>false }
         format.yaml { render :text => YAML.dump(@yaml_results), :layout=>false }
+        if @json_ordered == true
+          if @json_callback == nil
+            format.json { render :text => @json_results, :layout=>false }
+          else
+            format.json { render :text => @json_callback + '('+@json_results+ ')', :layout=>false }
+          end          
+        end
         if @json_callback == nil
           format.json { render :text => JSON.dump(@yaml_results), :layout=>false }
         else
@@ -1756,6 +1786,14 @@ puts "bar"
   end
 
   def containerInstructions
+    # do absolutely nothing at all... just render instructions
+  end
+  
+  def rubyContainer
+    # do absolutely nothing at all... just render instructions
+  end
+  
+  def androidContainer
     # do absolutely nothing at all... just render instructions
   end
 

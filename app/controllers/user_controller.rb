@@ -8,7 +8,7 @@ class UserController < ApplicationController
                                     :importContentFromFlickr, :getThumbnail, :getUser, :facebookWriteOnWall,
                                     :twitterPublish, :facebookConnected, :twitterConnected,
                                     :dropboxConnected, :flickrConnected, :flickrPublishPhoto,
-                                    :facebookPublishPhoto, :uploadFromBrowser]
+                                    :facebookPublishPhoto, :uploadFromBrowser, :dropboxUpload]
   
   # These methods need authentication:
   before_filter :authenticate, :only => [:settings, :addGroup, :deleteGroup, :deleteUser, 
@@ -22,7 +22,7 @@ class UserController < ApplicationController
                                          :twitterPublish, :facebookConnected, :twitterConnected,
                                          :dropboxConnected, :flickrConnected, :facebookImportAlbum,
                                          :flickrDeleteToken, :flickrImportPhotos, :flickrPublishPhoto,
-                                         :uploadFromBrowser ]
+                                         :uploadFromBrowser, :dropboxUpload ]
 
   before_filter :authenticateAPI, :only => [:doc]
   
@@ -1851,7 +1851,8 @@ class UserController < ApplicationController
        
       # If user already had auth token
       if not si
-        raise Exception.new("Could not find access token!")
+        render :text => "No access token for Flickr was found!", :status => 401
+        return
       end
 
       FlickRaw.api_key = @@flickr_api_key
@@ -1911,7 +1912,7 @@ class UserController < ApplicationController
         # User does not yet have auth_token
         
         # Use FlickRaw to get authorization url
-        token = flickr.get_request_token
+        token = flickr.get_request_token(:oauth_callback => "#{@@http_host}/flickr_callback")
         @flickr_url = flickr.get_authorize_url(token['oauth_token'], :perms => 'write')
         
         # Save the request token and secret
@@ -1969,7 +1970,7 @@ class UserController < ApplicationController
         raise Exception.new("Failed to find the user!")
       end
   
-      if not params["auth_code"]
+      if not params["oauth_verifier"]
         raise Exception.new("parameter 'auth_code' not found!")        
       end
       
@@ -1984,7 +1985,7 @@ class UserController < ApplicationController
       FlickRaw.api_key = @@flickr_api_key
       FlickRaw.shared_secret = @@flickr_secret
        
-      flickr.get_access_token(flickr_auth.auth_token, flickr_auth.auth_secret, params["auth_code"])
+      flickr.get_access_token(flickr_auth.auth_token, flickr_auth.auth_secret, params["oauth_verifier"])
       login = flickr.test.login
       puts "You are now authenticated as #{login.username} with token #{flickr.access_token} and secret #{flickr.access_secret}"
 
@@ -2010,11 +2011,118 @@ class UserController < ApplicationController
     end
     
   
-    render :text => "Authentication succesful!", :status => 201
-    return      
-    
-    
+    redirect_to "/user/#{session[:username]}/settings"
+    return         
   end
+  
+  
+  
+  # A way for client programs to link Flickr with VisualREST, without the need of going to VisualREST web-page
+  def flickr_client_authorization
+    
+    begin
+      if not params[:username]
+        render :text => "Error with username", :status => 409
+        return
+      end
+      
+      @user = User.find_by_username(params[:username])
+          
+      # Initialize FlickRaw
+      FlickRaw.api_key = @@flickr_api_key
+      FlickRaw.shared_secret = @@flickr_secret          
+          
+      # Use FlickRaw to get authorization url
+      token = flickr.get_request_token(:oauth_callback => "#{@@http_host}/user/"+params[:username]+"/flickr_client_callback")
+      @flickr_url = flickr.get_authorize_url(token['oauth_token'], :perms => 'write')
+          
+      # Save the request token and secret
+      flickr_auth = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                     :service_type => "flickr_auth")                                                              
+      flickr_auth.update_attribute(:auth_token, token['oauth_token'])
+      flickr_auth.update_attribute(:auth_secret, token['oauth_token_secret'] )        
+        
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+
+    puts @flickr_url
+    redirect_to @flickr_url
+    return
+
+  end
+  
+  
+  # Client programs authorization to Flickr account is directed to here.
+  # Convert request token to auth_token.
+  # Parameters: authentication parameters
+  #             'auth_code' - received from Flickr
+  # Returns: 201 - Success
+  #          409 - Failed
+  def flickr_client_callback
+
+ 
+    begin     
+      
+      if not params[:username]
+        render :text => "Error, failed to authenticate user!", :status => 401
+        return
+      end
+      
+      @user = User.find_by_username(params[:username])
+  
+      if @user == nil
+        raise Exception.new("Failed to find the user!")
+      end
+  
+      if not params["oauth_verifier"]
+        raise Exception.new("parameter 'auth_code' not found!")        
+      end
+      
+      
+      flickr_auth = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr_auth")                                                              
+
+      if not flickr_auth
+        raise Exception.new("Flickr authentication information not found on the server.")
+      end
+
+      # Initialize FlickRaw
+      FlickRaw.api_key = @@flickr_api_key
+      FlickRaw.shared_secret = @@flickr_secret
+       
+      flickr.get_access_token(flickr_auth.auth_token, flickr_auth.auth_secret, params["oauth_verifier"])
+      login = flickr.test.login
+      puts "You are now authenticated as #{login.username} with token #{flickr.access_token} and secret #{flickr.access_secret}"
+
+      # Put the flickr token and secret to database
+      flickr_si = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                :service_type => 'flickr',
+                                                                                :auth_token => flickr.access_token,
+                                                                                :auth_secret => flickr.access_secret,
+                                                                                :s_user_id => login.id,
+                                                                                :s_username => login.username)
+      
+      # Remove the temporary 'flickr_auth' from database, since it is no longer needed
+      puts "user id: #{@user.id}"
+      sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "flickr_auth"])
+      sis.each do |si|
+        si.delete
+      end
+
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+    
+  
+    render :text => "Authentication succesful, you can now return to the program you came here from!", :status => 201
+    return 
+ end
+  
+  
 
   def flickrDeleteToken
     
@@ -2161,6 +2269,8 @@ class UserController < ApplicationController
       # Authenticated user
       @user = @auth_user
       
+      caption = ""
+      
       if params["file_uri"] 
         
         # The file_uri points to a file in VisualREST
@@ -2181,6 +2291,10 @@ class UserController < ApplicationController
           raise Exception.new("parameter file_uri was nil!")
       end
       
+      if params["caption"]
+        caption = params["caption"]
+      end
+      
     rescue Exception => e
       putsE(e)
       render :text => "Error in publishing to Flickr, problem with filepath!", :status => 409
@@ -2193,7 +2307,8 @@ class UserController < ApplicationController
       si = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr")                                                              
 
       if not si
-        raise Exception.new("Flickr authentication information not found on the server.")
+        render :text => "Error in publishing to Flickr, service information not found!", :status => 412
+        return
       end
 
       if @devfile == nil || @blob == nil || @device == nil
@@ -2240,7 +2355,7 @@ class UserController < ApplicationController
       end
         
       # Upload the photo to Flickr
-      photos = flickr.upload_photo path_to_file, :title => @devfile.name
+      photos = flickr.upload_photo path_to_file, :title => @devfile.name, :description => caption
 
       info = flickr.photos.getInfo(:photo_id => photos)
       urli = FlickRaw.url_b(info) # => "http://farm3.static.flickr.com/2485/3839885270_6fb8b54e06_b.jpg"
@@ -2296,7 +2411,7 @@ class UserController < ApplicationController
       return
     end
   
-    render :text => "Published photo to Flickr", :status => 201
+    render :text => "Published photo to Flickr", :status => 200
     return
     
    
@@ -2379,7 +2494,6 @@ class UserController < ApplicationController
   
   
   
-  
   #
   #   - Gets authentication token from facebook. 
   #   - Redirects to settings page when successful.
@@ -2408,8 +2522,10 @@ class UserController < ApplicationController
         
         # If token was received
         if res and res.code == "200"
-  
-          @access_token = res.body
+    
+          splitted = res.body.split('&');
+          
+          @access_token = splitted[0]
   
           token = @access_token.sub('access_token=', '')
           
@@ -2448,6 +2564,100 @@ class UserController < ApplicationController
  end  
   
   
+  
+  # A way for client programs to link Facebook with VisualREST, without the need of going to VisualREST web-page
+  def facebook_client_authorization
+    
+    if not params[:username]
+      render :text => "Error with username", :status => 409
+      return
+    end
+        
+    # URL where user gives access to Facebook account
+    @my_url = "#{@@http_host}/user/"+params[:username]+"/facebook_client_callback"
+    
+    @facebook_authentication_url = "https://www.facebook.com/dialog/oauth?client_id=" + @@fb_app_id + "&redirect_uri=" + @my_url + "&scope=email,read_stream,user_photos,user_videos,friends_photos,friends_videos,user_events,friends_events,read_friendlists,offline_access,publish_stream"
+
+    redirect_to @facebook_authentication_url
+    return
+
+  end
+  
+  
+  # Client programs authorization to Facebook account is directed to here.
+  #   - Gets authentication token from facebook. 
+  #   - Returns 409 if errors occur
+  def facebook_client_callback
+
+    begin
+      
+      if not params[:username]
+        render :text => "Error with username", :status => 409
+        return
+      end
+        
+      # URL where user gives access to Facebook account
+      @my_url = "#{@@http_host}/user/"+params[:username]+"/facebook_client_callback"
+        
+      @user = User.find_by_username(params[:username]) 
+      
+      
+      if not params["code"] or params["code"].empty?
+        raise Exception.new("Error with parameters!")
+        
+      else
+        
+        code = params["code"]  
+        token_path = "/oauth/access_token?client_id=" + @@fb_app_id + "&redirect_uri=" + @my_url + "&client_secret=" + @@fb_app_secret + "&code=" + code
+        res = HttpRequest.new(:get, token_path).send(@@fb_graph_uri)
+        
+        # If token was received
+        if res and res.code == "200"
+    
+          splitted = res.body.split('&');
+          
+          @access_token = splitted[0]
+  
+          token = @access_token.sub('access_token=', '')
+          
+          # Gets user info
+          res = HttpRequest.new(:get, "/me?#{@access_token}").send(@@fb_graph_uri)
+          user_info = JSON.parse(res.body)
+
+          s_user_id = user_info["id"]
+          s_username = user_info["name"]
+          
+          if s_user_id and token
+            # Facebook does not have auth_secret, only auth_token
+            ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                          :service_type => "facebook", 
+                                                                          :s_user_id => s_user_id, 
+                                                                          :auth_token => token,
+                                                                          :s_username => s_username)
+          else
+            raise Exception.new("Error could not fetch token!")
+          end
+  
+        else
+          raise Exception.new("Could not get fb auth token..")
+        end
+        
+      end
+      
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+      
+    render :text => "Authentication succesful, you can now return to the program you came here from!", :status => 201
+    return
+ end  
+  
+  
+  
+  
+  
   #
   #   Deletes the access token of facebook
   #
@@ -2484,6 +2694,7 @@ class UserController < ApplicationController
   # Returns: 200 - Published photo to Facebook
   #          401 - Authentication failed
   #          409 - Error
+  #          412 - Service authentication params not found
   def facebookPublishPhoto
 
     if not @auth_user
@@ -2495,6 +2706,7 @@ class UserController < ApplicationController
     # Authenticated user
     @user = @auth_user
 
+    caption = ""
      
     begin
 
@@ -2518,6 +2730,10 @@ class UserController < ApplicationController
           raise Exception.new("parameter file_uri was nil!")
       end
       
+      if params["caption"]
+        caption = params["caption"]
+      end
+      
     rescue Exception => e
       putsE(e)
       render :text => "Error in publishing to Facebook, problem with filepath!", :status => 409
@@ -2532,14 +2748,20 @@ class UserController < ApplicationController
       if si
         @fb_auth_token = si
       else
-        raise Exception.new("Error, couldn't find service information for Facebook account")
+        render :text => "Error in publishing to Facebook, couldn't find service information'!", :status => 412
+        return
       end
      
       if @devfile == nil || @blob == nil || @device == nil
         raise Exception.new("Devfile, device or blob not found!")
       end
       
-      url = URI.parse( @@fb_graph_uri + "/" + @fb_auth_token.s_user_id.to_s + "/photos")
+      if @devfile.filetype.include?("video")
+        url = URI.parse( @@fb_graph_uri + "/" + @fb_auth_token.s_user_id.to_s + "/videos")        
+      else
+        url = URI.parse( @@fb_graph_uri + "/" + @fb_auth_token.s_user_id.to_s + "/photos")        
+      end
+      
       
       path_to_file = "public/devfiles/" + @devfile.device_id.to_s + "/" + @blob.blob_hash + "_" + @devfile.name
       
@@ -2572,7 +2794,8 @@ class UserController < ApplicationController
       File.open(path_to_file) do |photo|
 
         req = Net::HTTP::Post::Multipart.new( url.path,
-          "source" => UploadIO.new(photo, @devfile.filetype, @devfile.name), "access_token" => @fb_auth_token.auth_token )
+          "source" => UploadIO.new(photo, @devfile.filetype, @devfile.name), "access_token" => @fb_auth_token.auth_token,
+          "caption" => caption )
          
         http = Net::HTTP.new(url.host, url.port)
         if url.scheme == 'https'
@@ -2583,7 +2806,6 @@ class UserController < ApplicationController
         
         res = http.start {|ht| ht.request(req) }
 
-      
       
         # Check if the file is added to Facebook from response
         if res.code.to_s != "200"
@@ -2822,7 +3044,7 @@ class UserController < ApplicationController
       # Find Service Information for Facebook
       si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "facebook"])
       if not si
-        render :text => "No access token for facebook was found!", :status => 401
+        render :text => "No access token for Facebook was found!", :status => 401
         return
       end
       
@@ -3030,6 +3252,80 @@ class UserController < ApplicationController
 #
 ##################################################################################
 
+  def dropboxUpload
+    
+          
+    begin
+  
+      if not @auth_user
+        puts "Authentication failed!"
+        render :text => "Unauthorized - 401", :status => 401
+        return
+      end
+      
+      # Authenticated user
+      @user = @auth_user
+         
+
+      # Find the file that will be uploaded
+     
+      if params["file_uri"] 
+        
+        file_uri = params["file_uri"]
+        # The file_uri points to a file in VisualREST
+        @devfile = getDevfileFromURI(file_uri)
+             
+        @device = Device.find_by_id(@devfile.device_id)
+             
+        # Return true, if @user is authorized to devfile
+        if not authorizedToDevfile(@devfile.id)
+          raise Exception.new("Not authorized for the file!")
+        end
+        
+        @blob = Blob.find_by_id(@devfile.blob_id)
+        if @blob.uploaded == false
+          raise Exception.new('The file is not uploded on the server')
+        end
+      else
+          raise Exception.new("parameter file_uri was nil!")
+      end
+
+
+      # The path where to upload in dropbox
+      if params["dropbox_path"]
+        dropbox_path = params["dropbox_path"]
+        if dropbox_path[0,1] != "/"
+          dropbox_path = "/" + dropbox_path
+        end
+      else
+        raise Exception.new("parameter dropbox_full_path was nil!")
+      end
+      
+      begin
+        # Open the dropboxhelper. If dropbox auth_token is not already saved, an exception is thrown    
+        helper = DropboxHelper.new(@user)
+      rescue Exception => e
+        putsE(e)
+        render :text => "Error uploading file to Dropbox: #{e.to_s}", :status => 412
+        return
+      end
+        
+      
+      # Upload the file. If there is an error, exception will be thrown and later it will be catched.  
+      info = helper.uploadFile(dropbox_path, file_uri)
+      
+   
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error uploading file to Dropbox: #{e.to_s}", :status => 409
+      return
+    end
+    
+    render :text => "File uploaded to Dropbox.", :status => 200
+    return
+    
+  end
+  
   
   def dropboxSettings
     
@@ -3068,7 +3364,7 @@ class UserController < ApplicationController
       # User's virtual containers
       @v_containers = @user.devices.find(:all, :conditions => ["dev_type = ?", "virtual_container"])
       
-      # Checks if user already has auth token for facebook
+      # Checks if user already has auth token for dropbox
       si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "dropbox"])
       
       
@@ -3162,7 +3458,6 @@ class UserController < ApplicationController
       oauth_token = splitted[1].split('=')[1] 
       
       # Save the dropbox_authentication token and token_secret for later use
-      @user = User.find_by_username(session[:username])
       dropbox_auth = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
                                                                                    :service_type => "dropbox_auth")                                                              
       dropbox_auth.update_attribute(:auth_token, oauth_token)#extra_1
@@ -3173,7 +3468,11 @@ class UserController < ApplicationController
       ##################
       ### OAUTH - URL for step 2
       ##################
-      @dropbox_url = "https://www.dropbox.com/1/oauth/authorize?oauth_token=#{oauth_token}&oauth_callback=#{@@http_host}/dropbox_callback&locale=en"      
+      if @client_auth && @client_auth == true
+        @dropbox_url = "https://www.dropbox.com/1/oauth/authorize?oauth_token=#{oauth_token}&oauth_callback=#{@@http_host}/user/"+@user.username+"/dropbox_client_callback&locale=en"
+      else
+        @dropbox_url = "https://www.dropbox.com/1/oauth/authorize?oauth_token=#{oauth_token}&oauth_callback=#{@@http_host}/dropbox_callback&locale=en"
+      end
       
     rescue Exception => e
       putsE(e)
@@ -3259,6 +3558,107 @@ class UserController < ApplicationController
   end      
 
   
+  # A way for client programs to link Dropbox with VisualREST, without the need of going to VisualREST web-page
+  def dropbox_client_authorization
+    
+    begin
+      if not params[:username]
+        render :text => "Error with username", :status => 409
+        return
+      end
+      
+      @user = User.find_by_username(params[:username])
+          
+      @client_auth = true
+          
+      # Get OAuth token and url for authentication into '@dropbox_url'
+      dropboxOAuthStep1        
+        
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+
+    redirect_to @dropbox_url
+    return
+
+  end
+  
+  
+  # Client programs authorization to Dropbox account is directed to here.
+  # Returns: 201 - Success
+  #          409 - Failed
+  def dropbox_client_callback
+
+    begin
+        
+      ##################
+      ### OAUTH - step 3
+      ##################
+        puts "Dropbox OAUTH step 3"
+        if params["oauth_token"] && params["oauth_token"] != nil && params["uid"] && params["uid"] != nil
+          
+          received_oauth_token = params["oauth_token"]
+          received_oauth_uid = params["uid"]
+          
+          # Make sure the user has 'dropbox_auth' process begun
+          @user = User.find_by_username(params[:username])
+          si = ServiceInformation.find_by_user_id_and_service_type(@user.id, 'dropbox_auth')
+          if si == nil || si.auth_secret == nil
+            return
+          end 
+          
+          nonce = rand(10 ** 30).to_s.rjust(30,'0')
+          timestamp = Time.now.to_i
+          signature = @@db_app_secret + "&" + si.auth_secret
+          
+          params = { "oauth_consumer_key" => @@db_app_id, 
+                     "oauth_token" => received_oauth_token,
+                     "oauth_signature_method" => "PLAINTEXT", 
+                     "oauth_signature" => signature,
+                     "oauth_timestamp" => timestamp,
+                     "oauth_nonce" => nonce, 
+                     "oauth_version" => "1.0"}
+          
+          
+          path = "/1/oauth/access_token"
+          res = HttpRequest.new(:post, path, params, nil, false).send(@@dropbox_host)
+
+          if res.code.to_s != "200"
+           raise Exception.new("#{res.code.to_s}, #{res.body.to_s}")
+          end
+          
+          splitted = res.body.split('&')
+          oauth_token_secret = splitted[0].split('=')[1]
+          oauth_token = splitted[1].split('=')[1] 
+          
+                     
+          
+          # Put the dropbox token and secret to database
+          dropbox_si = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                     :service_type => 'dropbox',
+                                                                                     :auth_secret => oauth_token_secret,
+                                                                                     :auth_token => oauth_token,
+                                                                                     :s_user_id => received_oauth_uid)
+          
+          # Remove the temporary 'dropbox_auth' from database, since it is no longer needed
+          sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "dropbox_auth"])
+          sis.each do |si|
+            si.delete
+          end
+                      
+      end #if
+      
+    rescue Exception => e      
+      putsE(e)
+      render :text => "There was an error in step 3 of the Dropbox OAuth", :status => 409
+      return  
+    end
+    
+    render :text => "Authentication succesful, you can now return to the program you came here from!", :status => 201
+    return
+ end
   
   
   
@@ -3387,7 +3787,8 @@ class UserController < ApplicationController
        
       # If user already had auth token
       if not si
-        raise Exception.new("Could not find access token!")
+        render :text => "No access token for Dropbox was found!", :status => 401
+        return
       end
 
       # Connect Dropbox and see if the token is valid
@@ -3581,6 +3982,122 @@ class UserController < ApplicationController
 
 
 
+  # A way for client programs to link Twitter with VisualREST, without the need of going to VisualREST web-page
+  def twitter_client_authorization
+    
+    begin
+      if not params[:username]
+        render :text => "Error with username", :status => 409
+        return
+      end
+      
+      @user = User.find_by_username(params[:username])
+          
+      #################
+      ## OAuth - step 1
+      #################
+      client = TwitterOAuth::Client.new(
+                                  :consumer_key => @@twitter_consumer_key,
+                                  :consumer_secret => @@twitter_consumer_secret )
+                                  
+      request_token = client.request_token(:oauth_callback => @@http_host + "/user/" + @user.username + "/twitter_client_callback")
+      
+      twitter_auth = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                 :service_type => "twitter_auth")                                                              
+      twitter_auth.update_attribute(:auth_token, request_token.token)
+      twitter_auth.update_attribute(:auth_secret, request_token.secret )
+
+      
+      @twitter_auth_token = nil
+
+
+      #################
+      ## OAuth - step 2
+      #################
+      # Request token from twitter and give user
+      @twitter_authentication_url = request_token.authorize_url        
+      
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+
+    redirect_to @twitter_authentication_url
+    return
+
+  end
+  
+  
+  # Client programs authorization to Twitter account is directed to here.
+  # Returns: 201 - Success
+  #          409 - Failed
+  def twitter_client_callback
+
+      #################
+      ## OAuth - step 3
+      #################
+    
+      begin
+
+        puts "Twitter OAUTH step 3"
+        
+        if params["oauth_token"] && params["oauth_token"] != nil && 
+          params["oauth_verifier"] && params["oauth_verifier"] != nil
+          
+          if not params[:username]
+            raise Exception.new("Error: Could not find user in session!")
+          end
+          
+          # Make sure the user has 'twitter_auth' process begun
+          @user = User.find_by_username(params[:username])
+          
+          si = ServiceInformation.find_by_user_id_and_service_type(@user.id, 'twitter_auth')
+          
+          if si == nil || si.auth_token == nil || si.auth_secret == nil
+            raise Exception.new("Error: could not find twitter_auth information!")
+          end 
+          
+          client = TwitterOAuth::Client.new(
+                                    :consumer_key => @@twitter_consumer_key,
+                                    :consumer_secret => @@twitter_consumer_secret )
+          
+          access_token =  client.authorize(
+                            si.auth_token, 
+                            si.auth_secret,
+                            :oauth_verifier => params[:oauth_verifier] )
+          
+          
+                     
+          
+          # Put the twitter token and secret to database
+          twitter_si = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                     :service_type => 'twitter',
+                                                                                     :auth_secret => access_token.secret,
+                                                                                     :auth_token => access_token.token)
+          
+          # Remove the temporary 'twitter_auth' from database, since it is no longer needed
+          puts "user id: #{@user.id}"
+          sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "twitter_auth"])
+          sis.each do |si|
+            si.delete
+          end
+                      
+      end #if
+      
+    rescue Exception => e      
+      putsE(e)
+      render :text => "There was an error in step 3 of the Twitter OAuth", :status => 409
+      return  
+    end
+    
+    render :text => "Authentication succesful, you can now return to the program you came here from!", :status => 201
+    return
+ end
+
+
+
+
   def twitterPublish
     
     begin
@@ -3673,7 +4190,8 @@ class UserController < ApplicationController
        
       # If user already had auth token
       if not si
-        raise Exception.new("Could not find access token!")
+        render :text => "No access token for Twitter was found!", :status => 401
+        return
       end
 
       client = TwitterOAuth::Client.new( :consumer_key    => @@twitter_consumer_key,
