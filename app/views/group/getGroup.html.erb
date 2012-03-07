@@ -1,0 +1,48 @@
+<h1>Group: <%=  @group.name %></h1>
+
+<p>
+  Groupname: <a href="/user/<%=@owner.username%>/group/<%=@group.name%>"><%=@group.name%></a> <br />
+  Owner: <a href="/user/<%=@owner.username%>"><%=@owner.username%></a> <br />
+</p>
+    
+<h3 title="Members of the group">Members</h3>
+<table frame=box rules=all cellpadding="5%">
+  <% @members.each do |x| %>
+    <tr>
+      <td><a href="/user/<%=x.username%>"><%=x.username%></a></td>
+    </tr>
+  <% end %>
+</table>
+
+
+<h3 title="Group members are authorized to access files in these devices">Authorized for devices</h3>
+<table frame=box rules=all cellpadding="5%">
+  <tr>
+    <th>User</th>  
+    <th>Device</th>
+  </tr>
+  <% @devices.each do |x| %>
+    <tr>
+      <td><a href="/user/<%=x.username%>"><%=x.username%></a></td>
+      <td><a href="/user/<%=x.username%>/device/<%=x.dev_name%>"><%=x.dev_name%></a></td>
+    </tr>
+  <% end %>
+</table>
+
+  
+
+<h3 title="Group members are authorized to access these files">Authorized for files</h3>
+<table frame=box rules=all cellpadding="5%">
+  <tr>
+    <th>User</th>  
+    <th>Device</th>
+    <th>Name</th>
+  </tr>
+  <% @files.each do |x| %>
+    <tr>
+      <td><a href="/user/<%=x.username%>"><%=x.username%></a></td>
+      <td><a href="/user/<%=x.username%>/device/<%=x.dev_name %>/files"><%=x.dev_name %></a></td>
+      <td><a href="/user/<%=x.username%>/device/<%=x.dev_name %>/metadatas<%= x.path %><%= x.name %>"><%= x.path %><%= x.name %></a>
+    </tr>
+  <% end %>
+</table>

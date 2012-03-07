@@ -27,7 +27,6 @@ class SiteController < ApplicationController
     if session[:username]
       @user = User.find_by_username(session[:username])
     else
-      puts "foo uuud"
       redirect_to :action => "login", :controller => "user"
     end
     

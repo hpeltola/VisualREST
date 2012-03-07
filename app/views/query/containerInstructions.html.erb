@@ -1,0 +1,150 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Container Instructions</h1>
+<p>Container programs are designed to keep track of desired content on users' devices.
+  Metadata of the content is updated to the server. When requested, also the essence of the 
+  content will be uploaded to the server. The process consists of the following steps:</p>
+<ul>
+  <li>Device registers to VisualREST</li>
+  <li>Device uploads metadata of new content</li>
+  <li>Server request's for thumbnails of the content</li>
+  <li>Device uploads the thumbnails</li>
+  <li>Server request's for essence of a content</li>
+  <li>Device uploads the requested essence</li>
+</ul>
+
+
+
+<h2>Register device</h2>
+<p>Device is registered to VisualREST by sending a HTTP PUT request to URL:</p>
+<code>http://visualrest.cs.tut.fi/user/{username}/device/{devicename}?dev_type={device_type}&password={password}</code>
+
+<p>Example:</p>
+<code>http://visualrest.cs.tut.fi/user/testuser/device/android_nexus?dev_type=android&password=iKdo29xK</code>
+
+<p>When device is registered succesfully, a XMPP account is created for the device. The created XMPP account 
+  is: <b>{username}_{devicename}@visualrest.cs.tut.fi</b>. For example:</p>
+<code>testuser_android_nexus@visualrest.cs.tut.fi</code>
+
+<h2>Upload metadata</h2>
+<p>Metadata of new content is uploaded to the server with HTTP PUT request. 
+  Each metadata upload is identified by a commit_hash. One commit can have metadata of one or multiple content.
+  The URL for uploading metadata is:</p>
+<code>http://visualrest.cs.tut.fi/user/{username}/device/{devicename}/files?password={password}&contains={metadata_list}&commit_hash={commit_hash}</code>
+
+<ul>
+  <li><b>metadata_list</b>:</li>  
+  <ul>
+    <li>Contains metadata of new files in YAML-format.</li>
+    <li>Example: 
+      <code><br />contains= <br />
+---<br />
+/1.jpg:<br />
+&nbsp;&nbsp;name: 1.jpg<br />
+&nbsp;&nbsp;filedate: 12:21:53 2010-10-29<br />
+&nbsp;&nbsp;size: 20662<br />
+&nbsp;&nbsp;filetype: image/jpeg<br />
+&nbsp;&nbsp;path: /<br />
+&nbsp;&nbsp;blob_hash: cf9912eddafaa932e9e172ae79eec38b168435c5<br />
+&nbsp;&nbsp;status: updated<br />
+/kansio/2.jpg:<br />
+&nbsp;&nbsp;name: 2.jpg<br />
+&nbsp;&nbsp;filedate: 12:21:53 2010-10-29<br />
+&nbsp;&nbsp;ize: 20662<br />
+&nbsp;&nbsp;filetype: image/jpeg<br />
+&nbsp;&nbsp;path: /kansio/<br />
+&nbsp;&nbsp;blob\_hash: gf1112ettauuu621r8e334xx66ytc38b555454ff<br />
+&nbsp;&nbsp;status: created<br />
+</code></li>  
+  </ul>
+  
+  <li><b>blob_hash</b>:</li>
+  <ul>
+    <li>Unique SHA1 hash, with the length of 40 characters.</li>
+    <li>blob_hash = sha1("blob " + {size of essence} + "\0" + {essence})</li>
+  </ul>
+  <li><b>commit_hash</b>:</li>
+  <ul>
+    <li>Unique SHA1 hash. For VisualREST it does not matter how this is calculated, as long as it is unique.</li>
+    <li>For example it can be calculated as follows: commit_hash = sha1("commit " + {essence lengths in total} + "\0" +
+{blob_hash} + {blob_hash} + {blob_hash})</li>
+  </ul>
+  
+</ul>
+
+
+<h2>Upload thumbnail</h2>
+<p>Thumbnail of a photo is uploaded with a HTTP PUT request to URL:</p>
+<code>http://visualrest.cs.tut.fi/user/{username}/device/{devicename}/files{path}{filename}?i_am_client=true&auth_username={username}&auth_timestamp={timestamp}&auth_hash={auth_hash}&thumbnail=true&blob_hash={blob_hash}</code>
+<ul>
+  <li>The thumbnail is attached to the request as HTTP multipart entity data into 'upload' variable.</li>
+  <li>Authentication parameters (i_am_client, auth_username, auth_timestamp, auth_hash) 
+    are calculated according to 
+    <a href="/site/help/authenticationInstructions">client authentication instructions</a>.
+  </li>
+</ul>
+
+<h2>Upload essence</h2>
+<p>Uploading a essence of a content requires two HTTP request.</p>
+<ul>
+  <li>HTTP POST to URL: <code>http://visualrest.cs.tut.fi/user{username}/device/{devicename}/online?i_am_client=true&auth_username={username}&auth_timestamp={ṭimestamp}&auth_hash={auth_hash}&status={status}</code></li>
+  <ul>
+    <li><b>status:</b> YAML, containing filename and file_hash</li>
+    <li>Example:<br />
+      <code>status=<br />
+      ---<br />
+      &nbsp;&nbsp;uploading_file: /kansio/Kuva1.jpg<br />
+      &nbsp;&nbsp;uploading_file_hash: ae087ff1a4dff391bfe286156a61fb1a1470a6e6
+      </code>
+    </li>
+  </ul>
+  
+  <li>HTTP PUT to URL: <code>http://visualrest.cs.tut.fi/user/{username}/device/{devicename}/files{path}{filename}?i_am_client=true&auth_username={username}&auth_timestamp={ṭimestamp}&auth_hash={auth_hash}&blob_hash={blob_hash}</code>
+  <ul>
+    <li>Authentication parameters (i_am_client, auth_username, auth_timestamp, auth_hash) 
+    are calculated according to 
+    <a href="/site/help/authenticationInstructions">client authentication instructions</a>.
+    </li>
+    <li>Essence of the content is attached to the request as HTTP multipart entity data into 'upload' variable.</li>
+  </ul>
+    
+</ul>
+  
+
+
+
+
+
+<h2>XMPP interface</h2>
+<p>Devices receive four types of request from the VisualREST server with XMPP messages.
+  These are: <b>list</b>, <b>upload</b>, <b>thumbs</b> and <b>parse</b>. Next we will go through
+  these request and what response is expected from the device.</p>
+
+<h3>'list'</h3>
+<p>When device receives <b>list</b> command, the device should upload the latest commit
+  to VisualREST according to 'Upload metadata' above.</p>
+
+<h3>'thumbs 8b10da93353e0e27ef9bdb802f835c92ca423728'</h3>
+<p>With thumbs -request, the device is requested to upload thumbnais 
+  of the provided commit_hash. The thumbnails are uploaded to VisualREST
+  according to 'Upload thumbnail' above.
+  
+</p>
+
+<h3>'upload /harald.gif d8f7f710ee58a8590c271f059406293d63112a14'</h3>
+<p>Upload request has three parts. The second is fullpath and filename and third
+  is commit_hash. With these the file can be identified. The essence is 
+  uploaded to VisualREST according to 'Upload essence' above.</p>
+
+
+<h3>'parse successful 8b10da93353e0e27ef9bdb802f835c92ca423728' / 'parse error'</h3>
+<p>When metadata is uploaded to the server, the server starts processing the metadata list.
+  After the metadata is parsed, the server notifies the device about successful or erroneous
+  parsing. With successful parsing, the commit_hash is returned. If there was problem, it
+  is notified with 'parse error' message.
+  </p>
+

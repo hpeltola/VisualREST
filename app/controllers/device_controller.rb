@@ -11,27 +11,23 @@ class DeviceController < ApplicationController
   # Protection from cross site request forgery
   # These methods are also used from client and they cannot use authencity token:
   protect_from_forgery :except => [:updateFilelist, :online, :register, 
-                                   :deleteDevice, :updateFileList, :testi]
+                                   :deleteDevice, :updateFileList]
   
   # These methods needs authentication:
   before_filter :authenticate, :only =>[:online, :updateFilelist]
 
-  def foo(y)
-    puts "Foo"
-    puts y
-  end
-  
-  def testi
-    puts "1"
-    d = Devfile.find_by_id(979)
-    puts "d: #{d.id.to_s}"
-    puts "2"
-    checkForObservers(d)
-    puts "3"
-    render :text => "test ok", :status => 200
+
+
+  def preRegister
+    puts "preUpload STARTED!!!"
+    if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+      headers['Access-Control-Allow-Origin'] = '*'
+      headers['Access-Control-Allow-Methods'] = 'PUT'  
+      #headers['Access-Control-Request-Method'] = '*'  
+    end
+    render :text => "preUpload OK", :status => 200
   end
 
-  
   
   # Registers new device to the system.
   #
@@ -49,6 +45,11 @@ class DeviceController < ApplicationController
   # Usage (through REST): 
   #   Send PUT to /user/{username}/device/{devicename}/ with parameters: password and dev_type.
   def register
+    
+    if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+      headers['Access-Control-Allow-Origin'] = '*'
+      #headers['Access-Control-Request-Method'] = '*'  
+    end
     
     # check for missing parameters
     if check_params == false

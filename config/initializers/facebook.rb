@@ -1,4 +1,4 @@
-@@og_host = "https://graph.facebook.com"
+@@fb_graph_uri = "https://graph.facebook.com"
 
 
 # visualrest_production: http://visualrest.cs.tut.fi/fb_login/ 

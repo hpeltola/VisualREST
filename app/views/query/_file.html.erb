@@ -23,7 +23,7 @@
 					<%= @file_path[1..-1] %>
 				</span>
             <% end %>
-            <a href="<%= ('/user/' + @user_username + '/device/' + @device_dev_name + '/files/' + @fullpath + '?version=' + @blob_version.to_s) %>"><%= @file_name %></a><br/>
+            <a href="<%= ('/user/' + @user_username + '/device/' + @device_dev_name + '/metadatas/' + @fullpath + '?version=' + @blob_version.to_s) %>"><%= @file_name %></a><br/>
             <span class="quitesmall"><a href="<%= ('/user/' + @user_username + '/device/' + @device_dev_name + '/fileversions/' + @fullpath) %>">Version list</a></span>
             
 			     <br/> <% metadata_path = '/user/' + @user_username + '/device/' + @device_dev_name + '/metadatas/' + @fullpath %>
@@ -40,25 +40,37 @@
 			</span></div>
 
 
-
         <span class="version_controllers">
+        <% if @file_type.include?("image") %>
+          <a href="javascript:facebookPublish('<%='/user/' + @user_username + '/device/' + @device_dev_name + '/files/' + @fullpath %>');" title="Publish in Facebook!">
+            <img src="<%= "/thumbnails/facebook_logo_16.png" %>" alt="publish in Facebook" border="0"/>
+          </a>
+          <a href="javascript:flickrPublish('<%='/user/' + @user_username + '/device/' + @device_dev_name + '/files/' + @fullpath %>');" title="Publish in Flickr!">
+            <img src="<%= "/thumbnails/flickr_logo_16.png" %>" alt="publish in Facebook" border="0"/>
+          </a>
+        <% end %>
+
         <a href ="#" onclick="var show = 'false'; if( document.getElementById('metadatas_<%=@device_dev_name%>_<%= @fullpath.gsub(' ', '%20') %>').style.display == 'block'){show='true';} new Ajax.Request('/ajax/update/blob', {asynchronous:true, evalScripts:true, method:'post', parameters: 'showMetadata='+show+'&thumb_up=true&file_devfile_id=' + '<%= @file_devfile_id %>' + '&blob_update_id=' + '<%= @blob_id %>' + '&device_name=' + '<%= @device_dev_name %>' + '&username=' + '<%= @user_username%>' + '&device_id=' + '<%= @device_id %>' + '&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
           <img src="<%= "/thumbnails/thumb_up.png" %>" alt="Like" title="Like" border="0"/>
         </a> <%= @file_rank%> 
         <a href ="#" onclick="var show = 'false'; if( document.getElementById('metadatas_<%=@device_dev_name%>_<%= @fullpath.gsub(' ', '%20') %>').style.display == 'block'){show='true';} new Ajax.Request('/ajax/update/blob', {asynchronous:true, evalScripts:true, method:'post', parameters: 'showMetadata='+show+'&thumb_down=true&file_devfile_id=' + '<%= @file_devfile_id %>' + '&blob_update_id=' + '<%= @blob_id %>' + '&device_name=' + '<%= @device_dev_name %>' + '&username=' + '<%= @user_username%>' + '&device_id=' + '<%= @device_id %>' + '&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
           <img src="<%= "/thumbnails/thumb_down.png" %>" alt="Dislike" title="Dislike" border="0"/><br />
         </a>
+          
+          
           <%if @blob_predecessor_id != nil%>
           <a href="#" onclick="new Ajax.Request('/ajax/update/blob', {asynchronous:true, evalScripts:true, method:'post', parameters: 'file_devfile_id=' + '<%= @file_devfile_id %>' + '&blob_update_id=' + '<%= @blob_predecessor_id %>' + '&device_name=' + '<%= @device_dev_name %>' + '&username=' + '<%= @user_username%>' + '&device_id=' + '<%= @device_id %>' + '&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
             <img src="<%= "/thumbnails/vR_previous_version_2.png" %>" alt="previous" border="0"/>
           </a>
           <%end%>
+                    
           <span class="quitesmall"><b>Version: </b><%= @blob_version %></span>
           <%if @blob_follower_id != nil%>
           <a href="#" onclick="new Ajax.Request('/ajax/update/blob', {asynchronous:true, evalScripts:true, method:'post', parameters: 'file_devfile_id=' + '<%= @file_devfile_id %>' + '&blob_update_id=' + '<%= @blob_follower_id %>' + '&device_name=' + '<%= @device_dev_name %>' + '&username=' + '<%= @user_username%>' + '&device_id=' + '<%= @device_id %>' + '&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
             <img src="<%= "/thumbnails/vR_next_version_2.png" %>" alt="next" border="0"/>
           </a>
           <%end%>
+         <!-- <button title="Publish to Facebook!" style="align:center;" onclick="facebookPublish('http://127.0.0.1:8080/user/heikki/device/1212121es/files/7.jpg')">Publish to FB</button>-->
         </span>
         
 					

@@ -4,19 +4,25 @@
 </h1>
 <%end%>
 
-<h1>Importing from Flickr</h1>
-<p>You can link your Flickr account with VisualREST and retrieve all your public or private photos.</p>
+<h1>Flickr integration</h1>
+<p>You can import your public/private photos from your Flickr account to VisualREST. 
+  Also you can publish your photos from VisualREST to Flickr. 
+</p>
 
-<h2>Authorize VisualREST</h2>
-<p>First you need to give VisualREST authorization to read content from your Flickr account. <br />
+<h2>Get authorization token to Flickr</h2>
+<p>First you need to give VisualREST authorization to access content from your Flickr account. <br />
   <ul>  
-    <li>Go to 'Settings->Import content from flickr' and press 'Get Flickr Token'.</li>
+    <li>Go to 'Settings->Flickr' and press 'authorize!'.</li>
     <li>A popup window will ask you to authorize VisualREST.</li>
-    <li>Close the popup window and press 'refresh' button under the 'Get Flickr Token'-button.</li>
+    <li>When the authorization is granted, you will need to copy the provided code</li>
+    <li>Copy the code to the provided box in 'Settings->Flickr' and press 'send'</li>
     <li>Your Flickr authorization will be saved on VisualREST.</li>
-    <li>You can remove authorization token by pressing 'Delete Flickr token'-button</li>
+    <li>You can remove authorization token by pressing 'Delete access token'-button</li>
   </ul>
 </p>
+
+
+<br /><br />
 
 <h2>Import content from Flickr</h2>
 <p>
@@ -24,6 +30,57 @@
   <ul>
     <li>Select virtual container from list.</li>
     <li>Select public/private photos to import from Flickr.</li>
-    <li>Press 'Get photos from Flickr'.</li>
+    <li>Press 'Import photos from Flickr'.</li>
   </ul>
+</p>
+
+
+
+
+<br /><br />
+
+<h2>Publish photo to Flickr</h2>
+<p>
+  Photos can be published to Flick using <b>HTTP request</b> or <b>using the form in 'settings->Flickr->Publish photo to Flickr'</b> 
+  or <b>in file search using the Flickr-logo.</b>
+</p>
+
+<h3>HTTP request</h3>
+  <li><b>method:</b>     POST</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/flickrPublishPhoto</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+    <li><b>file_uri</b>: uri to the file in VisualREST
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br />
+  curl -X POST http://visualrest.cs.tut.fi/user/heikki/flickrPublishPhoto -F file_uri=http://visualrest.cs.tut.fi/user/heikki/device/dev20111208/files/bus.jpg 
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true  
+</p>
+
+
+
+<br /><br />
+
+<h2>Test Flickr access token</h2>
+<p>
+  Access token to Flickr can be tested, to make sure it is valid.
+</p>
+
+<h3>HTTP request</h3>
+  <li><b>method:</b>     GET</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/flickrConnected</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br />
+  curl -X GET http://visualrest.cs.tut.fi/user/heikki/flickrConnected
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true  
 </p>

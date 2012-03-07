@@ -60,7 +60,7 @@ class ApplicationController < ActionController::Base
     #
     # Usage: This method is used by those methods that are mentioned at the begining of each controller (before_filter)
     def authenticate
-@auth_user = nil
+        @auth_user = nil
 #puts "1"
         # client interface
         if params["i_am_client"]
@@ -76,7 +76,7 @@ class ApplicationController < ActionController::Base
             if !params["auth_timestamp"] or !params["auth_hash"]
                 puts "unknown user, authentication failed (c2)"
                 render :text => "Unauthorized - 401", :status => 401
-            return
+                return
             end
 
             # calculate hash and compare with client hash
@@ -93,7 +93,7 @@ class ApplicationController < ActionController::Base
             if params["auth_hash"] != hash
                 puts "unknown user, authentication failed (c3)"
                 render :text => "Unauthorized - 401", :status => 401
-            return
+                return
             end
 
         # web-ui
@@ -143,19 +143,19 @@ class ApplicationController < ActionController::Base
 #puts "1"
             # the requested resource did not include username
             if !params["auth_username"]
-            return nil
+              return nil
             end
 #puts "2"
             # authentication tokens missing
             if !params["auth_timestamp"] or !params["auth_hash"]
-            return nil
+              return nil
             end
 #puts "3"
             # calculate hash and compare with client hash
             user = User.find_by_username(params["auth_username"])
 
             if user == nil
-            return nil
+              return nil
             end
 
             password = user.password
@@ -172,12 +172,12 @@ class ApplicationController < ActionController::Base
             if params["auth_hash"] != hash
 puts "#{hash}  vs. #{params["auth_hash"]}"
 #puts "7"
-            return nil
+              return nil
             end
 
-        else
-        return nil
-        end
+            else
+              return nil
+            end
 
         puts "Client authentication with user #{params["auth_username"]} OK"
         return params["auth_username"]
@@ -231,6 +231,66 @@ puts "#{hash}  vs. #{params["auth_hash"]}"
       
     return false
   end
+  
+    
+  # Return true, if @user is authorized to devfile
+  def authorizedToDevfile(fileID)
+    
+    devfile = Devfile.find_by_id(fileID)
+    
+    # Find the devfile
+    if devfile == nil
+      return false
+    end
+    
+    # Is the devfile private
+    if devfile.privatefile == false
+      return true
+    end
+    
+    if @user == nil
+      return false
+    end
+    
+    ## If user is the owner, he is authorized
+    if devfile.device.user.id == @user.id
+      return true
+    end
+    
+    ## Is user in a group that is authorized for the devfile
+                
+    # Groups that user is in
+    uigroups = Usersingroup.find_all_by_user_id(@user.id)
+    if uigroups == nil
+      return false
+    end
+    
+    device = devfile.device
+    
+          
+    # Is group autohorized for the devfile
+    uigroups.each do |uigroup|
+           
+      group = DevfileAuthGroup.find_by_group_id_and_devfile_id(uigroup.group_id, devfile.id)
+            
+      # If group is authorized for the devfile, return true
+      if group != nil
+        return true
+      end
+      
+      # Is the device of the devfile authorized for the group
+      devAuth = DeviceAuthGroup.find_by_device_id_and_group_id(device.id, uigroup.group_id)
+      if devAuth != nil
+        return true
+      end
+      
+      
+    end
+      
+    return false
+    
+  end
+    
   
 
     # Creates one string from given params for sql-queries
@@ -478,7 +538,7 @@ puts "#{hash}  vs. #{params["auth_hash"]}"
             puts "Devfile of the URI: #{uri} was NOT found!"
             raise Exception.new("Devfile of the URI: #{uri} was NOT found!")
         else
-        return devfile
+          return devfile
         end
     end
 
@@ -657,6 +717,16 @@ class BlobRepresentation
     @metadatas = metadatas
   end
   
+  def get_uri(format = :html)
+    
+    if format == :atom
+      return "#{@@http_host}/user/#{@username}/device/#{@dev_name}/metadatas#{@path}#{@name}?format=atom"
+    else
+      return "#{@@http_host}/user/#{@username}/device/#{@dev_name}/metadatas#{@path}#{@name}"
+    end
+
+  end
+  
   
   def to_yaml(host="")
     
@@ -666,6 +736,7 @@ class BlobRepresentation
     if @device.last_seen > 2.minutes.ago then device_status = "online" end
         res = {"#{@path}#{name}" => {
       "thumbnail" => "#{@@http_host}/thumbnails/#{@device_id}/#{@blob_hash}.png",
+      "essence_uri" => "#{@@http_host}/user/#{@username}/device/#{@dev_name}/files#{@path}#{@name}",
       "description" => @description,
       "file_user" => @username,
       "file_version" => @version,

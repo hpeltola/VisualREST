@@ -56,7 +56,7 @@ class DeleteHelper
     
     
       
-    # Vaihe 2: devfilet + blobs + metadatas + file_observers + filelocations
+    # Vaihe 2: devfilet + blobs + metadatas + file_observers + devfile_auth_groups
     
     devfiles = Devfile.find(:all, :conditions => ["device_id = ? ", @device.id])
     devfiles.each do |df|
@@ -96,13 +96,8 @@ class DeleteHelper
       end
       
       begin
-        filelocs = Filelocation.find(:all, :conditions => ["devfile_id = ? ", df.id])
-        if filelocs != nil
-          filelocs.each do |fl|
-            putsP "poistetaan fl"
-            fl.delete
-          end
-        end
+        # devfile_auth_groups
+        DevfileAuthGroup.delete_all(:devfile_id => df.id)
       rescue Exception => e
         putsE(e)
       end
@@ -166,6 +161,13 @@ class DeleteHelper
       putsE(e)
     end
     
+    # Remove device_auth_groups
+    begin
+      DeviceAuthGroup.delete_all(:device_id => @device.id)
+    rescue Exception => e
+      putsE(e)
+    end
+      
     deleteXMPPAccount
     # These are already removed by removeContent -method
     #removeThumbnails

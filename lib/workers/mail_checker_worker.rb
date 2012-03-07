@@ -1,4 +1,4 @@
-# Worker: - gets mails from hermannihiiri.tty@gmail.com
+# Worker: - gets mails from XXXXXX@gmail.com
 #         - Goes through users mail accounts and gets new attachments
 
 require 'rubygems'
@@ -8,7 +8,7 @@ require 'net/https'
 require 'tmail'
 require 'yaml'
 require 'mime/types'
-require 'save_to_virtual_container.rb'
+
 
 
 class MailCheckerWorker < BackgrounDRb::MetaWorker
@@ -20,7 +20,7 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
     # time argument is in seconds
 #    add_periodic_timer(180) { getNewMail }
     puts "mail_checker_worker: Periodic timer not added. Remove row from comments to add timer"
-    getNewMail # Start first iteration immediately
+#    getNewMail # Start first iteration immediately
   end
   
     
@@ -64,8 +64,8 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
     begin
           
       ## Configurations    
-      username = "hermannihiiri.tty"
-      password = "hermannittyhiiri"
+      username = "XXXXXX"
+      password = "YYYYYY"
       server = "imap.gmail.com"
       port = 993
               
@@ -129,7 +129,7 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
        
        puts "Mail is from account that user has named and context is found"
        
-       device_id = nil
+       device = nil
       
         # If has attachments, save them
         if email.has_attachments?
@@ -142,16 +142,17 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
             end
             
             # Create device if doesn't already exist
-            if device_id == nil
+            if device == nil
               # Try to find virtual device or create it
-              device_id = findOrCreateVirtualDevice(user.id, "visualrest_mail_box")
+              device = findOrCreateVirtualDevice(user.id, "visualrest_mail_box")
               
               # If device name is already in use for other type of device, 
-              if device_id == nil
+              if device == nil
                 puts "Couldn't create virtual_container with name 'visualrest_mail_box'"
                 next
               end
-            end            
+            end  
+                     
                     
             filename = part_filename(part)
             content_type = part.content_type
@@ -165,16 +166,24 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
               filename = email.subject.to_s.gsub('[p]', '').strip.gsub(/\r/, '_') + "_" + filename
             end
             
-            saveFile = SaveToVirtualContainer.new(device_id, filename, part.body)
-            saveFile.addToContext(context.id, "context_hash", context.context_hash)
-            saveFile.addMetadata("mail_topic", email.subject)
-            saveFile.addMetadata("mail_from", email.from.to_s.strip)
+            # Use virtualContainerManager to add the file
+            # Create the manager      
+            @virtualContainerManager = VirtualContainerManager.new(user, device.dev_name)
+        
+            # Add file with the manager
+            @virtualContainerManager.addFile('/' + filename, part.body)
             
-          #  begin
-          #    XmppHelper::notificationToContextNode(saveFile.devfile, context)
-          #  rescue => e
-          #    puts e.to_s
-          #  end          
+            @virtualContainerManager.addMetadata('/' + filename, "context_hash", context.context_hash)
+            
+            # Add metadata
+            @virtualContainerManager.addMetadata('/' + filename, "mail_topic", email.subject)
+            @virtualContainerManager.addMetadata('/' + filename, "mail_from", email.from.to_s.strip)
+            
+            
+            
+            # Make the commit
+            @virtualContainerManager.commit
+                      
             puts "File #{filename} was saved to visualrest"
           end
         end
@@ -238,7 +247,7 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
           next
         end
        
-        device_id = nil
+        device = nil
       
         # If has attachments, save them
         if email.has_attachments?
@@ -251,12 +260,12 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
             end
             
             # Create device if doesn't already exist
-            if device_id == nil
+            if device == nil
               # Try to find virtual device or create it
-              device_id = findOrCreateVirtualDevice(user.id, virtual_device_name)
+              device = findOrCreateVirtualDevice(user.id, virtual_device_name)
               
               # If device name is already in use for other type of device, 
-              if device_id == nil
+              if device == nil
                 puts "Couldn't create virtual_container with name #{virtual_device_name}"
                 next
               end
@@ -273,10 +282,20 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
               # Adds email topic as a prefix for the file
               filename = email.subject.to_s.gsub('[p]', '').strip.gsub(/\r/, '_') + "_" + filename
             end
+           
+            # Use virtualContainerManager to add the file
+            # Create the manager      
+            @virtualContainerManager = VirtualContainerManager.new(user, device.dev_name)
+        
+            # Add file with the manager
+            @virtualContainerManager.addFile('/' + filename, part.body)
             
-            saveFile = SaveToVirtualContainer.new(device_id, filename, part.body)
-            saveFile.addMetadata("mail_topic", email.subject)
-            saveFile.addMetadata("mail_from", email.from.to_s.strip)
+            # Add metadata
+            @virtualContainerManager.addMetadata('/' + filename, "mail_topic", email.subject)
+            @virtualContainerManager.addMetadata('/' + filename, "mail_from", email.from.to_s.strip)
+            
+            # Make the commit
+            @virtualContainerManager.commit
             
             puts "File #{filename} was saved to visualrest"
           end
@@ -318,7 +337,7 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
                              :last_seen => DateTime.now,
                              :direct_access => false)
     end
-    return device.id
+    return device
   end
   
   
@@ -355,3 +374,26 @@ class MailCheckerWorker < BackgrounDRb::MetaWorker
   end
 
 end
+
+  def addContextRights(contextID, devf_id)
+    begin
+      if devf_id == nil
+        return
+      end
+            
+      # Adds same group rights to the devfile as context has
+      groups = ContextGroupPermission.find_all_by_context_id(contextID)
+            
+      if groups
+        groups.each do |cgp|
+          DevfileAuthGroup.find_or_create_by_devfile_id_and_group_id(:devfile_id => devf_id,
+                                                                     :group_id => cgp.group_id)
+        end
+      end
+    rescue => e
+      puts "Error in adding contextrights: #{e.to_s}"
+    end
+      
+    return
+  end
+

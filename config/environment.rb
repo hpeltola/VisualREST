@@ -88,8 +88,9 @@ end
   require 'RMagick'
   include Magick
   
-  
-  
+  require 'twitter_oauth'
+  require 'net/http/post/multipart'
+  require 'flickraw'
   
   
   require "xmpp4r/pubsub"
@@ -97,7 +98,7 @@ end
   require "xmpp4r/pubsub/helper/nodebrowser.rb"
   require "xmpp4r/pubsub/helper/nodehelper.rb"
   
-  require "./lib/save_to_virtual_container.rb"
+
   
   require "./lib/XmppHelper.rb"
   require "./lib/NodeHelper.rb"
@@ -116,3 +117,5 @@ end
   require "./lib/ContentObject.rb"
   require "./lib/ClusterObject.rb"
   require "./lib/ContextObject.rb"
+  require "./lib/DeviceObject.rb" 
+  require "./lib/UserObject.rb" 

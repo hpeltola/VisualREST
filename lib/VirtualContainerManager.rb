@@ -1,4 +1,4 @@
-#require 'save_to_virtual_container.rb'
+
 
 class VirtualContainerManager
   
@@ -37,12 +37,6 @@ class VirtualContainerManager
       putsE(e)
       raise Exception.new("Could not create a new virtual container!")
     end
-  end
-  
-  
-  def createDevfile(filename, essence)
-    saveFile = SaveToVirtualContainer.new(@virtual_container.id, filename, essence)
-    return saveFile.getDevfile
   end
   
   
@@ -180,6 +174,20 @@ class VirtualContainerManager
                 end
               }
           }
+          
+          begin
+            filelist.each do |x|
+              deletepath = x[0][1..-1]
+              if File.exists?(deletepath)
+                FileUtils.rm_f(deletepath)
+                puts "deleted the essence that is still stored in git.."
+              else
+                puts "Essence not found..."
+              end
+            end
+          rescue => e
+            puts "Error deleting essence: #{e}"
+          end
           
         rescue => e
           puts "Failed to add metadata to file: #{e}"

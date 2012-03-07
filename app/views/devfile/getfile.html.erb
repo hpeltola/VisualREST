@@ -24,8 +24,10 @@
 
              
 
-            <a href="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/files/' + file.path) %>"><%= file.name %></a><br/>
-            <span class="quitesmall"><a href="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/fileversions/' + file.path) %>">Version list</a></span>
+            <a href="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/files' + file.path + file.name) %>"><%= file.name %></a><br/>
+            <span class="quitesmall"><a href="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/fileversions' + file.path + file.name) %>">Version list</a> 
+                                     <a href="<%= ('/user/' + file.username + '/device/' + file.dev_name + '/filerights' + file.path + file.name) %>">filerights</a>
+            </span>
             
            <br/>
            <span class="quitesmall"><%= ("

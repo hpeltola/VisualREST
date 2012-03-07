@@ -5,7 +5,10 @@ class UserController < ApplicationController
                                     :deleteDevice, :deleteDeviceFiles, :deleteAllUserFiles, 
                                     :createContext, :modifyContext, :modifyUser, :addNode, :deleteNode,
                                     :contextSettings, :emailSettings, :virtualContainerSettings, 
-                                    :importContentFromFlickr, :getThumbnail, :getUser]
+                                    :importContentFromFlickr, :getThumbnail, :getUser, :facebookWriteOnWall,
+                                    :twitterPublish, :facebookConnected, :twitterConnected,
+                                    :dropboxConnected, :flickrConnected, :flickrPublishPhoto,
+                                    :facebookPublishPhoto, :uploadFromBrowser]
   
   # These methods need authentication:
   before_filter :authenticate, :only => [:settings, :addGroup, :deleteGroup, :deleteUser, 
@@ -15,7 +18,11 @@ class UserController < ApplicationController
                                          :deviceSettings, :modifyUser, :manageEmails,
                                          :addObserver, :emailSettings, :contextSettings, 
                                          :virtualContainerSettings, :importContentFromFlickr, 
-                                         :importContentFromFB ]
+                                         :importContentFromFB, :facebookPublishPhoto, :facebookWriteOnWall,
+                                         :twitterPublish, :facebookConnected, :twitterConnected,
+                                         :dropboxConnected, :flickrConnected, :facebookImportAlbum,
+                                         :flickrDeleteToken, :flickrImportPhotos, :flickrPublishPhoto,
+                                         :uploadFromBrowser ]
 
   before_filter :authenticateAPI, :only => [:doc]
   
@@ -37,13 +44,25 @@ class UserController < ApplicationController
   
   def testi
     
-    user = User.find_by_username("nikkis")
-    context = Context.find_by_id(10)
+=begin    # Remove broken links in devfile_auth_groups
+    begin
+      counter = 0
+      devgroups = DevfileAuthGroup.find(:all)
+      devgroups.each do |x|
+        devfile = Devfile.find_by_id(x.devfile_id)
+        if not devfile
+          counter += 1
+          DevfileAuthGroups.delete_all(:devfile_id => x.devfile_id)
+        end
+      end
+   rescue => e
+      puts "Problem with the test function. E: #{e}"
+      render :text => "Problem with the test function. E: #{e}"
+      return
+    end
     
-    XmppHelper::pushToUserNode_invited_or_uninvaited_from_context(user, context, true)
-    
-    render :text => "Message was given for worker to send to context node!", :status => 202
-    return
+    render :text => "Found #{counter} broken links in devfile_auth_groups and removed them!", :status => 200
+=end    return
     
   end
 
@@ -89,15 +108,16 @@ class UserController < ApplicationController
         
         # Get the filename from the upload data
         @filename = "/" + params[:upload]['datafile'].original_filename
-    puts
-    puts "filename löyty"
-      
+        
+        # Create the manager      
         @virtualContainerManager = VirtualContainerManager.new(user, device.dev_name)
-      puts "manageri luotu"
+        
+        # Add file with the manager
         @virtualContainerManager.addFile(@filename, params[:upload]['datafile'].read)
-          puts "tiedosto lisätty"
+        
+        # Make the commit
         @virtualContainerManager.commit
-      puts "kaikki ohi"
+      
       else
          render :text => "No file selected, try again..."
          return
@@ -113,6 +133,62 @@ class UserController < ApplicationController
     end
   end
 
+  
+  def uploadFromBrowser
+    
+          
+    begin
+      
+      if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+        headers['Access-Control-Allow-Origin'] = '*'
+        #headers['Access-Control-Request-Method'] = '*'  
+      end
+        
+      if params[:upload]
+        
+        # Find the device
+        device = User.find_by_username(params[:username]).devices.find_by_dev_name(params[:devicename])
+        
+        if device == nil
+          render :text => "Could not find the device"
+          return
+        end
+        
+        user = User.find_by_username(params[:username])
+        
+        if user == nil
+          render :text => "Could not find the user"
+          return
+        end
+        
+        # Get the filename from the upload data
+        @filename = "/" + params[:upload]['datafile'].original_filename
+        
+        # Create the manager      
+        @virtualContainerManager = VirtualContainerManager.new(user, device.dev_name)
+        
+        # Add file with the manager
+        @virtualContainerManager.addFile(@filename, params[:upload]['datafile'].read)
+        
+        # Make the commit
+        @virtualContainerManager.commit
+      
+      else
+         render :text => "No file selected, try again..."
+         return
+      end
+      
+      render :text => "File has been uploaded successfully <br /> " +
+                      "<a href='/user/#{params[:username]}/device/#{params[:devicename]}/'>Return</a><br />" +
+                      "<a href='/user/#{params[:username]}/device/#{params[:devicename]}/files'>See files</a>"
+      
+    rescue => e
+      puts "Problem uploading with Web-UI. E: #{e}"
+      render :text => "Problem uploading with Web-UI. E: #{e}"
+    end
+    
+  end
+
 
   def getUser
     
@@ -123,6 +199,15 @@ class UserController < ApplicationController
     end
     if params[:qoption] && params[:qoption]["query_processing_time"] == "true"
       @query_processing = true
+    end
+
+    @json_callback = nil
+    if params[:qoption] && params[:qoption]["json_callback"]
+      @json_callback = params[:qoption]["json_callback"]
+    end
+
+    if params[:qoption] && params[:qoption]["format"]
+      params[:format] = params[:qoption]["format"]
     end
     
     # Signed in with web-ui?
@@ -157,6 +242,9 @@ class UserController < ApplicationController
     own_groups = Group.find_all_by_user_id(@user.id)
     @groups = Array.new
     @own_groups = Array.new
+    # This is for json/yaml
+    @user_friends = Array.new
+    # Same as above, but for web-interface
     @friends = Hash.new
     # Find additional info for every group
     
@@ -181,6 +269,7 @@ class UserController < ApplicationController
         x.users.each do |xx|
           if xx.id != @user.id
             @friends[xx.id] = xx.username
+            @user_friends.push(xx.username)
           end
         end
         tmp = Hash.new
@@ -194,6 +283,20 @@ class UserController < ApplicationController
       return
     end
     
+    
+    if params[:format] == "yaml" or params[:format] == "json"
+      @yaml_results = {}
+
+      begin
+
+        userObject = UserObject.new(@user, params[:format], @groups, @own_groups, @user_friends)
+        @yaml_results.merge!({userObject.get_uri => userObject.to_yaml})
+        
+      rescue Exception => e
+        putsE(e)
+      end
+      puts @yaml_results.to_s
+    end
 
         
     if query_processing_time_begin != nil
@@ -212,7 +315,12 @@ class UserController < ApplicationController
       else
         format.html {render :getUser}
         format.atom { render :getUser, :layout=>false }
-        #format.yaml { render :text => YAML.dump(@yaml_results), :layout=>false }
+        format.yaml { render :text => YAML.dump(@yaml_results), :layout=>false }
+        if @json_callback == nil
+          format.json { render :text => JSON.dump(@yaml_results), :layout=>false }
+        else
+          format.json { render :text => @json_callback + '(' + JSON.dump(@yaml_results) + ')', :layout=>false }
+        end
       end
     end
   end
@@ -257,7 +365,10 @@ class UserController < ApplicationController
     
     # Return the thumbnail to whom requested it
     
-    
+    if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+      headers['Access-Control-Allow-Origin'] = '*'
+      #headers['Access-Control-Request-Method'] = '*'  
+    end
     send_data(file_data, :type => 'image/jpeg',
               :filename => user.username,
               :disposition => 'inline')
@@ -377,9 +488,6 @@ class UserController < ApplicationController
   # You can:
   # - Add them
   # - Change name
-  # - join your email address to it
-  #   * Get all old email attachments
-  #   * every 10 minutes, check for new attachments
   def virtualContainerSettings
     
    if not session[:username]
@@ -438,311 +546,7 @@ class UserController < ApplicationController
     
   end
 
- # Manage users email accounts
- # Used for fetching mail and saving attachments to to server
- def importContentFromFlickr
-   puts "import content from flickr"
-   if not session[:username]
-     render :text => "Error, failed to authenticate user!", :status => 401
-     return
-   end
 
-  @user = User.find_by_username(session[:username])
-
-  if @user == nil
-    render :text => "Error, failed to find user!", :status => 401
-    return
-  end
-  
-  if params[:delete_flickr_token]
-    flickr_data = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr")
-    if flickr_data != nil
-      flickr_data.destroy
-    end
-  end
-  
-  @flickr_data = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr")
-
-  # If user doesn't have a flickr token saved, it needs to be saved
-  if @flickr_data == nil
-
-    perms = "read"
-    api_sig = Digest::MD5.hexdigest(@@flickr_secret+'api_key'+@@flickr_api_key+'perms'+perms)
-  
-    @flickr_url = "http://flickr.com/services/auth/?api_key=#{@@flickr_api_key}&perms=#{perms}&api_sig=#{api_sig}"
-
-  else
-    
-    # Gets photos from Flickr, if getPhotosFromFlickr parameter was given
-    @amountOfPhotosFromFlickr = 0
-    @gettingPhotosFromFlickr = getPhotosFromFlickr
-      
-    if @gettingPhotosFromFlickr == true
-      @gettingToContainer = params[:container_name] 
-    end
-    
-    # List of users containers
-    @virtualUserDevices = Device.find_all_by_user_id_and_dev_type(@user.id, "virtual_container")
-    
-    
-    
-  end
-
-  render :update do |page|
-    page["import_content_from_flickr"].replace_html :partial => 'import_content_from_flickr'
-  end
- end
-  
-  # This function gets users photos from Flickr. The photos are either public or private photos of user.
-  def getPhotosFromFlickr
-    if params[:getPhotosFromFlickr] && params[:getPhotosFromFlickr] == "true" && 
-      params[:container_name] && params[:privacy_setting]
-      
-      container = Device.find_by_user_id_and_dev_type_and_dev_name(@user.id, "virtual_container", params[:container_name])
-      if container == nil
-        return false
-      end
-      
-      if params[:privacy_setting] == "public"
-        privacy_setting = 1
-      elsif params[:privacy_setting] == "private"
-        privacy_setting = 5
-      else 
-        return false
-      end
-
-      
-      # Make photo search in Flickr for User's photos
-      method = "flickr.photos.search"
-      
-      calculate_this = "#{@@flickr_secret}api_key#{@@flickr_api_key}" +
-                       "auth_token#{@flickr_data.s_token}" +
-                       "method#{method}" +
-                       "privacy_filter#{privacy_setting}" +
-                       "user_id#{@flickr_data.s_id}"
-
-      api_sig =  Digest::MD5.hexdigest(calculate_this)
-      
-      
-      flickr_url = "http://api.flickr.com"
-      flickr_params = "/services/rest/?api_sig=#{api_sig}&" +
-                                     "api_key=#{@@flickr_api_key}&" +
-                                     "auth_token=#{@flickr_data.s_token}&" +
-                                     "method=#{method}&" +
-                                     "privacy_filter=#{privacy_setting}&" +
-                                     "user_id=#{@flickr_data.s_id}"
-      #puts flickr_params
-      begin
-        url = URI.parse(flickr_url)
-        res = Net::HTTP.start(url.host, url.port) {|http|
-          http.get(flickr_params)
-        }
-        xml = res.body
-        if xml == nil
-          return false
-        end
-        
-        doc = XML::Document.string(xml) 
-        #puts "XML:   #{xml}"
-  
-        @amountOfPhotosFromFlickr = doc.find_first('//photos')['total']
-        puts
-        puts "Number of files to download from Flickr to virtual container: #{@amountOfPhotosFromFlickr}"
-        puts 
-        if @amountOfPhotosFromFlickr == nil || @amountOfPhotosFromFlickr == "0"
-          return false
-        end  
-
-        ##### Start new thread for retrieving files from flickr #####
-        Thread.new do
-          downloadUserPhotosFromFlickr(doc, container)              
-        end
-        ##### END #####
-  
-        # Set the time when files were fetched
-        if privacy_setting == 1
-          @flickr_data.update_attribute(:extra_1, Time.now)
-        elsif privacy_setting == 5
-          @flickr_data.update_attribute(:extra_2, Time.now)
-        end
-        return true
-      rescue => e
-        putsE(e)
-      end       
-    end
-    
-    return false
-  end
-    
-  # This function is run in a thread. It downloads files from Flickr and saves them to VisualREST in a virtual container
-  def downloadUserPhotosFromFlickr(doc, container)
-
-    begin   
-      @virtualContainerManager = VirtualContainerManager.new(@user, container.dev_name)
-          
-      nodes = doc.find('//photos/photo')
-                      
-      nodes.each do |node|
-              
-        if node['farm'] != nil && node['server'] != nil && node['id'] != nil && 
-          node['secret'] != nil && node['title'] != nil
-              
-          # Build url 
-          photo_url = "http://farm"+node['farm']+".static.flickr.com"
-          photo_params = "/"+node['server']+"/"+node['id']+"_"+node['secret']+".jpg"
-                
-          purl = URI.parse(photo_url)
-                
-          # Get the photo
-          photo = Net::HTTP.start(purl.host, purl.port) {|http|
-            http.get(photo_params)
-          }
-                
-          filename = '/' + node['title'] + ".jpg"
-                
-          @virtualContainerManager.addFile(filename, photo.body)
-          puts "File " + filename + " created."
-                                
-          ### Get photo info
-          getPhotoInfoFromFlickr(node['id'], node['secret'], container, filename)              
-          
-        end
-              
-      end    
-            
-    rescue => e
-      puts e
-    end      
-    @virtualContainerManager.commit
-  end
-  
-  # This function is used for getting photo info from Flickr. The info will be saved as metadata for the file in VisualREST
-  def getPhotoInfoFromFlickr(photo_id, photo_secret, container, filename)
-    begin
-      
-      method = "flickr.photos.getInfo"      
-         
-      flickr_url = "http://api.flickr.com"
-      flickr_params = "/services/rest/?api_key=#{@@flickr_api_key}&" +
-                                      "method=#{method}&" +
-                                      "photo_id=#{photo_id}&" +
-                                      "secret=#{photo_secret}"
-            
-
-      url = URI.parse(flickr_url)
-      res = Net::HTTP.start(url.host, url.port) {|http|
-        http.get(flickr_params)
-      }
-
-      xml = res.body
-      
-      if xml == nil
-        #next
-      end
-
-      doc = XML::Document.string(xml) 
-              
-      # Description
-      description = doc.find_first('//photo/description').content
-      if description != nil && description.strip != ""
-        @virtualContainerManager.addMetadata(filename, "description", description.strip)
-        puts "   Description: #{description}"
-      end
-              
-      # Datetime taken
-      taken = doc.find_first('//photo/dates')['taken']
-      if taken != nil && taken.strip != ""
-        @virtualContainerManager.addMetadata(filename, "taken", taken.strip)
-        puts "   Picture taken: #{taken}"
-      end
-              
-      # Tags
-      tags = doc.find('//photo/tags/tag')
-      tags.each do |tag| 
-        @virtualContainerManager.addMetadata(filename, "tag", tag['raw'])
-        puts "   Tag: #{tag['raw']}"
-      end
-              
-      # Url
-      url_photo = doc.find_first('//photo/urls/url').content
-      if url_photo != nil && url_photo.strip != ""
-        @virtualContainerManager.addMetadata(filename, "url", url_photo.strip)
-        puts "   Photo url: #{url_photo}"
-      end
-      
-      # Origin
-      @virtualContainerManager.addMetadata(filename, "origin", "flickr")
-      
-      puts
-      puts "FETCHING METADATA FOR FILE IS NOW DONE."
-      puts "\n"
-    rescue => e
-      puts e
-    end
-    
-    return  
-  end
-  
-  
-  # Flickr sends frob here. Now we need to get token using frob.
-  # Save the token user table.
-  def flickrAuthentication
-    if not session[:username]
-      render :text => "Error, failed to authenticate user!", :status => 401
-      return
-    end
-    
-    @user = User.find_by_username(session[:username])
-
-    if @user == nil
-      render :text => "Error, failed to find user!", :status => 401
-      return
-    end
-
-
-    @receivedToken = false
-          
-    if params[:frob] && params[:frob] != ""
-
-      frob = params[:frob]
-      method = "flickr.auth.getToken"
-      
-      api_sig =  Digest::MD5.hexdigest("#{@@flickr_secret}api_key#{@@flickr_api_key}frob#{frob}method#{method}")
-
-      flickr_url = "http://api.flickr.com"
-      flickr_params = "/services/rest?api_key=#{@@flickr_api_key}&api_sig=#{api_sig}&method=#{method}&frob=#{frob}"
-      
-      begin
-        url = URI.parse(flickr_url)
-        res = Net::HTTP.start(url.host, url.port) {|http|
-          http.get(flickr_params)
-        }
-        xml = res.body
-        doc = XML::Document.string(xml) 
-        
-        token = doc.find_first('//auth/token').content
-        nsid = doc.find_first('//auth/user')['nsid']
-        flickr_username = doc.find_first('//auth/user')['username']
-        
-        if token != nil && nsid != nil && flickr_username != nil
-          puts "Token: #{token}"
-          puts "NSID: #{nsid}"
-          puts "Username: #{flickr_username}"
-          @receivedToken = true
-          flickr_data = ServiceInformation.find_or_create_by_user_id_and_service_type(@user.id, "flickr")
-          flickr_data.update_attribute(:s_token, token)
-          flickr_data.update_attribute(:s_id, nsid)
-          flickr_data.update_attribute(:s_username, flickr_username)
-        end
-      rescue => e
-        putsE(e)
-      end  
-      
-    end
-    
-    
-    
-  end
 
 
   # Register new user to the system.
@@ -1108,8 +912,24 @@ class UserController < ApplicationController
   # Method for viewing device's settings.
   # Method initializes google map, that show device's last location
   def deviceSettings  
-   initDeviceMap
-   deviceCurrentLocation  
+    initDeviceMap
+    deviceCurrentLocation
+    
+    # Find all user's groups
+    @groups = Array.new
+    groups = Group.find_all_by_user_id(@auth_user.id)
+    
+    groups.each do |x|
+      group = x
+      group["device_in_group"] = false
+      
+      if DeviceAuthGroup.find_by_device_id_and_group_id(@device.id, group.id)
+        group["device_in_group"] = true
+      end
+      
+      @groups.push(group)
+    end
+    
   end
 
 
@@ -1394,30 +1214,8 @@ class UserController < ApplicationController
     user = User.find_by_username(session[:username])
     @groups = Group.find(:all, :conditions => ["user_id = ?", user.id])
     
-    
   end
-  
-  
-  def test
-   # puts "set_#{params[:file_devfile_id]}"
     
-   # puts "voi jee: " + params[:file_devfile_id]
-    
-    modifyObserversForFile
-    
-    puts "Renderointi"
-    render :update do |page|
-      page["set_#{params[:file_devfile_id]}"].replace_html :partial => 'pala'#, :locals => {:status => stat, :image => params[:image]} 
-    end
-    
-    puts "the end"
-    
-    
-  end
-  
-  
-  
-  
   
   def modifyObserversForFile
     
@@ -1430,15 +1228,21 @@ class UserController < ApplicationController
         @observed_file = getDevfileFromURI(@file_uri)
         @user = User.find_by_username(session[:username])
         if @user
+          
+          # Make sure the user has xmpp settings set.
+          if @user.xmpp_jid == nil || @user.xmpp_pw == nil || @user.xmpp_host == nil || @user.xmpp_jid == nil
+            render :text => "Problem with user's xmpp settings. Go to 'settings -> Node settings'.", :status => 400
+            return
+          end
+          
           client_info = {:id => @user.xmpp_jid+'@visualrest.cs.tut.fi', :psword => @user.xmpp_pw,
                          :host => @user.xmpp_host, :port => 5222, :plain_id => @user.xmpp_jid,
                          :node_service => "pubsub.#{@user.xmpp_host}"}
           @node_names = XmppHelper::getMyNodes(client_info, true)
         else
-          render :text => "User no logged in!", :status => 300
+          render :text => "User not logged in!", :status => 300
           return    
         end
-        
         
         @observers_checked = []
         i = 0
@@ -1509,9 +1313,7 @@ class UserController < ApplicationController
   
 
 
-  # REST, uses PUT:
 
-  
   # Adds new group for certain user.
   #
   # parameters: If used from web site takes group object from form. 
@@ -1530,71 +1332,21 @@ class UserController < ApplicationController
   #
   # Usage (through REST): 
   #   Send PUT to /user/{username}/group/{groupname}
-=begin
-  def addGroup_orig
-    
-    @title = "Add new group"
-    # Tests if method is used from web site or if used from client.
-    if (request.put? and params[:group]) or (request.put? and params[:groupname])
-      
-      user = User.find_by_username(params[:username])
-      if params[:groupname]
-        @group = Group.create(:name => params[:groupname], :user_id => user.id)
-      else
-        @group = Group.create( params[:group] )
-      end
-      
-      # Tries to save the new group
-      if @group.save
-            # Adds user to group
-            #  Usersingroup.create(:user_id => @user.id, :group_id => @group.id, :created_at => DateTime.now, :updated_at => DateTime.now)
-        flash[:notice] = "Group #{@group.name} created!"
-        if params[:i_am_client]
-          # Used through REST
-          render :text => "Group #{@group.name} created - 201", :status => 201
-        else
-          # Used from site
-          redirect_to :action => "settings"
-        end
-      else
-        # If saving did not succeed:
-        if params[:i_am_client]
-          render :text => "Group #{@group.name} already exists - 409", :status => 409
-          return
-        else
-          flash[:notice] = "Group #{@group.name} already exists!"
-          redirect_to :action => "addGroup"
-        end
-      end
-      
-    end
-  end
-=end
-  
   def addGroup
     user = User.find_by_username(params[:username])
-    if params[:groupname] and request.put? or params[:groupname] and request.post?
+    if params[:groupname]
+      
       @group = Group.find_or_create_by_name_and_user_id(:name => params[:groupname], :user_id => user.id)
-      # Tries to save the new group
+      
       if @group
-        if params[:i_am_client]
-          # Used through REST
-          render :text => "Group #{@group.name} created - 201", :status => 201
-        else
-          #@groups = Group.find(:all, :conditions => ["user_id = ? ", user.id])
-          #render :update do |page|
-          #  page["group_settings"].replace_html :partial => 'usergroup'
-          #end
-          return
-        end
-      else
-        # If saving did not succeed:
-        if params[:i_am_client]
-          render :text => "Error in creating new group: #{@group.name} - 409", :status => 409
-          return
-        end
-      end
+        render :text => "Group #{@group.name} created - 201", :status => 201
+        return
+      end 
     end
+    
+    # If adding group failed
+    render :text => "Error in creating new group - 409", :status => 409
+    return
   end
   
   
@@ -1618,7 +1370,7 @@ class UserController < ApplicationController
   # Usage (from another method):
   #   deleteGroup(true) and set @user and @group before calling
   def deleteGroup(fromAnotherMethod = false)
-    puts "foo"
+
     # If method is not used from another method, user and group needs to be searched
     if not fromAnotherMethod
       @user = User.find_by_username(params[:username])
@@ -1634,7 +1386,7 @@ class UserController < ApplicationController
     
     puts "Deleting group: #{@group.name}..."  
     
-    # Deletes users fromthe group 
+    # Deletes users from the group 
     puts "Deleting users from the group..."
     @group.users.each do |u|
       authgroup = u.groups.find(:first, :conditions => ["group_id = ?", @group.id])
@@ -1643,34 +1395,19 @@ class UserController < ApplicationController
       end
     end
     
+    # Deletes devfile_auth_groups
+    DevfileAuthGroup.delete_all(:group_id => @group.id)
+    
+    # Deletes device_auth_groups
+    DeviceAuthGroup.delete_all(:group_id => @group.id)
+    
     puts "Deleting group #{@group.name} from db.."
     # Deletes the actual group
     @group.delete
-=begin
-    # If used from another method, returns true if group was deleted successfully.
-    if fromAnotherMethod
-      puts "Whole group deleted.."
-      return true
-    else
-      # Used through REST:
-      puts "Whole group deleted.."
-      render :text => "OK - 200", :status => 200
-      return
-    end
-=end
-    if params[:i_am_client]
-      # Used through REST:
-      puts "Whole group deleted.."
-      render :text => "OK - 200", :status => 200
-      return
-    else
-      #@groups = Group.find(:all, :conditions => ["user_id = ? ", @user.id])
-      #render :update do |page|
-      #  page["group_settings"].replace_html :partial => 'usergroup'
-      #end
-      render :text => "OK - 200", :status => 200
-      return
-    end
+
+    render :text => "OK - 200", :status => 200
+    return
+    
   end
   
   
@@ -1765,27 +1502,23 @@ class UserController < ApplicationController
     
     
     # go through given group settings for each given user and update their group settings
-    ActiveRecord::Base.connection.execute("begin")
     params[:groups].each do |user_id, user_group_settings|
       user_group_settings.each do |group_id, checked|
         if checked == "1" and (users_and_groups[user_id.to_i] == nil or not users_and_groups[user_id.to_i].include?(group_id.to_i))
           # user isn't previously a member of the group, so he needs to be added to the group
-          sql = "INSERT INTO usersingroups(user_id, group_id, created_at, updated_at) values(#{user_id}, #{group_id}, '#{now}', '#{now}');"
-          ActiveRecord::Base.connection.execute(sql)
+          Usersingroup.find_or_create_by_user_id_and_group_id(:user_id => user_id, :group_id => group_id)
           
           modified_groups_for_pubsub_node << group_id
           
         elsif checked == "0" and (users_and_groups[user_id.to_i] != nil and users_and_groups[user_id.to_i].include?(group_id.to_i))
           # user is previously a member of the group, so he needs to be removed from the group
-          sql = "DELETE FROM usersingroups WHERE user_id = #{user_id} AND group_id = #{group_id};"
-          ActiveRecord::Base.connection.execute(sql)
-          
+          Usersingroup.delete_all(['user_id = ? and group_id = ?', user_id, group_id])
+
           modified_groups_for_pubsub_node << group_id
           
         end    
       end
     end
-    ActiveRecord::Base.connection.execute("commit")
     
     
     # Sends notifications
@@ -1859,7 +1592,7 @@ class UserController < ApplicationController
       
       authgroup = @edit_user.groups.find(:first, :conditions => ["group_id = ?", group.id])
       if params[:groups][group.name] == "1" and authgroup == nil
-        Usersingroup.create(:user_id => @edit_user.id, :group_id => group.id, :created_at => DateTime.now, :updated_at => DateTime.now)
+        Usersingroup.find_or_create_by_user_id_and_group_id(:user_id => @edit_user.id, :group_id => group.id)
         
       elsif params[:groups][group.name] == "0" and authgroup != nil
         # if group-checkbox is not checked
@@ -1878,7 +1611,6 @@ class UserController < ApplicationController
     begin
       
       Thread.new{
-      puts "fuuru"
       
       sql = "SELECT contexts.* 
              FROM contexts, context_group_permissions, groups 
@@ -1889,16 +1621,14 @@ class UserController < ApplicationController
       context = Context.find_by_sql(sql).first
       
       if context
-    puts "jekke"      
+     
           begin
             puts "Sends notification to node!"
             XmppHelper::publishToContextGeneralNode(context, "Context Members Modified!", "context-modified")
             puts "Notification sent!"
           rescue Exception => ee
             putsE(ee)
-          end
-      else
-        puts "noppe"      
+          end    
       end
       }
     rescue Exception => ec
@@ -1937,7 +1667,6 @@ class UserController < ApplicationController
   
   
   def groupsettings
-    puts "bar"
     if session[:username]
       @user = User.find_by_username(session[:username])
       @groups = Group.find(:all, :conditions => ["user_id = ?", @user.id])
@@ -2092,8 +1821,489 @@ class UserController < ApplicationController
   end
   
   
+    
+  ##########################################################################################
+  #
+  #     FLICKR STUFF
+  #
+  ##########################################################################################
+
   
   
+  # Returns 200 - If auth token is present and valid
+  #         401 - If problem authenticating user
+  #         409 - If auth token not present or expired
+  def flickrConnected
+    
+    begin
+
+      if not @auth_user
+        puts "Authentication failed!"
+        render :text => "Unauthorized - 401", :status => 401
+        return
+      end
+
+      # Authenticated user
+      @user = @auth_user
+         
+      # Checks if user already has auth token for flickr
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "flickr"])
+       
+      # If user already had auth token
+      if not si
+        raise Exception.new("Could not find access token!")
+      end
+
+      FlickRaw.api_key = @@flickr_api_key
+      FlickRaw.shared_secret = @@flickr_secret
+
+      flickr.access_token = si.auth_token
+      flickr.access_secret = si.auth_secret
+      
+      login = flickr.test.login
+      if login.username != si.s_username
+        raise Exception.new("Problem with authentication")
+      end      
+        
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error, couldn't find access token to Flickr': #{e.to_s}", :status => 409
+      return
+    end
+    
+    render :text => "Flickr access token is valid.", :status => 200
+    return
+    
+  end
+
+
+
+  def flickrSettings
+    
+    begin
+   
+      if params["hide"] == "true"
+        render :update do |page|
+          page["flickr_settings"].replace_html :partial => 'flickr_settings'
+        end
+        return
+      end
+     
+      if not session[:username]
+        puts "db_login"
+        redirect_to :action => "login", :controller => "user"
+        return
+      else
+        @user = User.find_by_username(session[:username]) 
+      end
+    
+      si = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr")
+  
+      @flickr_data = si
+      
+      # Initialize FlickRaw
+      FlickRaw.api_key = @@flickr_api_key
+      FlickRaw.shared_secret = @@flickr_secret
+      
+      @flickr_url = nil
+
+      if @flickr_data == nil
+        # User does not yet have auth_token
+        
+        # Use FlickRaw to get authorization url
+        token = flickr.get_request_token
+        @flickr_url = flickr.get_authorize_url(token['oauth_token'], :perms => 'write')
+        
+        # Save the request token and secret
+        flickr_auth = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                   :service_type => "flickr_auth")                                                              
+        flickr_auth.update_attribute(:auth_token, token['oauth_token'])
+        flickr_auth.update_attribute(:auth_secret, token['oauth_token_secret'] )
+          
+      else
+      
+  
+        # Ensures that user has virtual_container called: flickr_container
+        VirtualContainerManager.new(@user, "flickr_container")
+              
+        # List of users containers
+        @virtualUserDevices = Device.find_all_by_user_id_and_dev_type(@user.id, "virtual_container")
+
+        flickr.access_token = si.auth_token
+        flickr.access_secret = si.auth_secret
+  
+        login = flickr.test.login
+        if login.username != si.s_username
+          raise Exception.new("Problem with authentication")
+        end
+       
+      end
+    rescue Exception => e
+      putsE(e)
+    end      
+
+    render :update do |page|
+      page["flickr_settings"].replace_html :partial => 'flickr_settings'
+    end
+  end
+  
+  
+  
+  # Convert request token to auth_token.
+  # Parameters: authentication parameters
+  #             'auth_code' - received from Flickr
+  # Returns: 201 - Success
+  #          409 - Failed
+  def flickr_callback
+
+    begin     
+      
+      if not session[:username]
+        render :text => "Error, failed to authenticate user!", :status => 401
+        return
+      end
+      
+      @user = User.find_by_username(session[:username])
+  
+      if @user == nil
+        raise Exception.new("Failed to find the user!")
+      end
+  
+      if not params["auth_code"]
+        raise Exception.new("parameter 'auth_code' not found!")        
+      end
+      
+      
+      flickr_auth = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr_auth")                                                              
+
+      if not flickr_auth
+        raise Exception.new("Flickr authentication information not found on the server.")
+      end
+
+      # Initialize FlickRaw
+      FlickRaw.api_key = @@flickr_api_key
+      FlickRaw.shared_secret = @@flickr_secret
+       
+      flickr.get_access_token(flickr_auth.auth_token, flickr_auth.auth_secret, params["auth_code"])
+      login = flickr.test.login
+      puts "You are now authenticated as #{login.username} with token #{flickr.access_token} and secret #{flickr.access_secret}"
+
+      # Put the flickr token and secret to database
+      flickr_si = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                :service_type => 'flickr',
+                                                                                :auth_token => flickr.access_token,
+                                                                                :auth_secret => flickr.access_secret,
+                                                                                :s_user_id => login.id,
+                                                                                :s_username => login.username)
+      
+      # Remove the temporary 'flickr_auth' from database, since it is no longer needed
+      puts "user id: #{@user.id}"
+      sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "flickr_auth"])
+      sis.each do |si|
+        si.delete
+      end
+
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+    
+  
+    render :text => "Authentication succesful!", :status => 201
+    return      
+    
+    
+  end
+
+  def flickrDeleteToken
+    
+    if not session[:username]
+      render :text => "User not logged in!", :status => 401
+      return
+    else
+      @user = User.find_by_username(session[:username]) 
+    end
+    
+    begin
+      sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "flickr"])
+      sis.each do |si|
+        si.delete
+      end
+    rescue Exception => e
+      putsE(e)
+      render :text => "Failed to delete token!", :status => 500
+      return
+    end
+    
+    render :text => "Token deleted successfully!", :status => 200
+    return
+    
+  end
+  
+  
+  def flickrImportPhotos
+  
+    begin
+      
+      if not @auth_user
+        raise Exception.new("Authentication failed!")
+      end
+
+      # Authenticated user
+      @user = @auth_user
+      
+      if not params[:container_name]
+        raise Exception.new("parameter 'container_name' missing.")
+      end
+      
+      @virtualContainerManager = VirtualContainerManager.new(@user, params[:container_name])
+      
+      # This states what content we are importing from Flickr 
+      if params[:privacy_filter] == "public"
+        privacy_setting = "1"
+      elsif params[:privacy_filter] == "private"
+        privacy_setting = "5"
+      else 
+        raise Exception.new("parameter 'privacy_filter' value should be 'public'/'private'.")
+      end
+      
+      
+      si = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr")                                                              
+
+      if not si
+        raise Exception.new("Flickr authentication information not found on the server.")
+      end
+
+      # Initialize FlickRaw
+      FlickRaw.api_key = @@flickr_api_key
+      FlickRaw.shared_secret = @@flickr_secret
+       
+      flickr.access_token = si.auth_token
+      flickr.access_secret = si.auth_secret
+  
+      # Arguments for photo search on Flickr
+      args = {}
+      args[:privacy_filter] = privacy_setting
+      args[:user_id] = si.s_user_id
+    
+      # Make the photo search
+      photos = flickr.photos.search args
+      
+      @import_amount = photos.total
+
+      # Go through all of the photos
+      photos.each do |p|
+        # get info about the photo
+        info = flickr.photos.getInfo(:photo_id => p.id)
+
+        # get essence of the photo
+        url = FlickRaw.url_b(info)
+        
+        photo_url = URI.parse(url)
+        
+        photo = Net::HTTP.start(photo_url.host, photo_url.port) {|http|
+            http.get(photo_url.path)
+        } 
+        
+        photo_essence = photo.body
+              
+        filename = '/' + info.title + "_" + info.id + ".jpg"
+              
+        @virtualContainerManager.addFile(filename, photo_essence)
+        
+        # Save metadata to file
+        @virtualContainerManager.addMetadata(filename, "url", url)
+        @virtualContainerManager.addMetadata(filename, "origin", "flickr")
+        @virtualContainerManager.addMetadata(filename, "flickr_id", info.id)
+        
+        if info.dates.taken != ""
+          @virtualContainerManager.addMetadata(filename, "taken", info.dates.taken)
+        end
+        
+        if info.description != ""
+          @virtualContainerManager.addMetadata(filename, "description", info.description)
+        end
+        
+        if info.tags != ""
+          info.tags.each do |tag|
+            @virtualContainerManager.addMetadata(filename, "tag", tag.to_s)
+          end
+        end         
+                
+        puts "File " + filename + " imported from Flickr."
+     
+      end
+      
+      # Make the commit of the files and metadatas
+      @virtualContainerManager.commit
+            
+     rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+  
+    render :text => "Imported #{@import_amount} photos from Flickr!", :status => 201
+    return
+
+  end
+  
+    
+  def flickrPublishPhoto
+    
+    begin
+      
+      if not @auth_user
+        raise Exception.new("Authentication failed!")
+      end
+
+      # Authenticated user
+      @user = @auth_user
+      
+      if params["file_uri"] 
+        
+        # The file_uri points to a file in VisualREST
+        @devfile = getDevfileFromURI(params["file_uri"])
+             
+        @device = Device.find_by_id(@devfile.device_id)
+             
+        # Return true, if @user is authorized to devfile
+        if not authorizedToDevfile(@devfile.id)
+          raise Exception.new("Not authorized for the file!")
+        end
+        
+        @blob = Blob.find_by_id(@devfile.blob_id)
+        if @blob.uploaded == false
+          raise Exception.new('The file is not uploded on the server')
+        end
+      else
+          raise Exception.new("parameter file_uri was nil!")
+      end
+      
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error in publishing to Flickr, problem with filepath!", :status => 409
+      return
+    end
+      
+      
+    begin
+      
+      si = ServiceInformation.find_by_user_id_and_service_type(@user.id, "flickr")                                                              
+
+      if not si
+        raise Exception.new("Flickr authentication information not found on the server.")
+      end
+
+      if @devfile == nil || @blob == nil || @device == nil
+        raise Exception.new("Devfile, device or blob not found!")
+      end
+
+      # Initialize FlickRaw
+      FlickRaw.api_key = @@flickr_api_key
+      FlickRaw.shared_secret = @@flickr_secret
+       
+      flickr.access_token = si.auth_token
+      flickr.access_secret = si.auth_secret
+  
+    
+
+      
+      #url = URI.parse( @@fb_graph_uri + "/" + @fb_auth_token.s_user_id.to_s + "/photos")
+      
+      path_to_file = "public/devfiles/" + @devfile.device_id.to_s + "/" + @blob.blob_hash + "_" + @devfile.name
+      
+      if @device.dev_type == "virtual_container"
+        
+        # The file is on a virtual_container, Find the device's git repository
+        if not File.exists?("private/#{@device.id}/.git")
+          raise Exception.new("Git repository for the device was not found!")
+        else
+          @repo = Grit::Repo.new("private/#{@device.id}/.git")
+        end
+           
+        # Get the blob data
+        repoBlob = @repo.blob(@blob.blob_hash)
+        if repoBlob == nil
+          raise Exception.new("Blob was not found on the server")
+        end
+  
+        path_to_file = "private/#{@device.id}#{@devfile.path}#{@devfile.name}"
+        if not (File.exists?("private/#{@device.id}#{@devfile.path}") && File.directory?("private/#{@device.id}#{@devfile.path}"))
+          FileUtils.mkdir_p("private/#{@device.id}#{@devfile.path}")      
+        end 
+        # Save from git to a file in path 'path_to_file'
+        File.open(path_to_file, "wb") { |f|   
+          f.write(repoBlob.data)
+        }
+      end
+        
+      # Upload the photo to Flickr
+      photos = flickr.upload_photo path_to_file, :title => @devfile.name
+
+      info = flickr.photos.getInfo(:photo_id => photos)
+      urli = FlickRaw.url_b(info) # => "http://farm3.static.flickr.com/2485/3839885270_6fb8b54e06_b.jpg"
+
+
+      # Add metadata: FLICKR_ID
+      type = MetadataType.find_by_name("flickr_id")
+      value = photos
+  
+      metadata = Metadata.find(:first, :conditions => ['metadata_type_id = ? and devfile_id = ?', type.id, @devfile.id])
+      if metadata == nil
+        metadata = Metadata.find_or_create_by_value_and_blob_id_and_devfile_id_and_metadata_type_id(value, nil, @devfile.id, type.id)
+      else
+        metadata.update_attribute(:value, value)
+      end
+  
+      # Add metadata: URL
+      type = MetadataType.find_by_name("url")
+      value = urli
+  
+      metadata = Metadata.find(:first, :conditions => ['metadata_type_id = ? and devfile_id = ?', type.id, @devfile.id])
+      if metadata == nil
+        metadata = Metadata.find_or_create_by_value_and_blob_id_and_devfile_id_and_metadata_type_id(value, nil, @devfile.id, type.id)
+      else
+        metadata.update_attribute(:value, value)
+      end
+
+
+
+      if @device.dev_type == "virtual_container"
+        # Delete the essence that was saved from git to the disk
+        begin
+          if File.exists?(path_to_file)
+            FileUtils.rm_f(path_to_file)
+            puts "deleted the essence that is still stored in git.."
+          else
+            puts "Essence not found..."
+          end
+        rescue => e
+          puts "Error deleting essence: #{e}"
+        end
+      end
+  
+  
+  
+  
+      
+
+            
+     rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+  
+    render :text => "Published photo to Flickr", :status => 201
+    return
+    
+   
+  end
+  
+  
+
   
   
   ##########################################################################################
@@ -2104,91 +2314,146 @@ class UserController < ApplicationController
   
   
   
-  
-  #
-  #   Gets authentication token from facebook. Goes in two phases: 1. Oauth,  2. Gets token and saves it
-  #
-  #
-  def fb_login
-   
-   puts "foo1"
-   
-    @og_host = @@og_host
-    @fb_app_id = @@fb_app_id
-    @fb_app_secret = @@fb_app_secret
-    @my_url = "#{@@http_host}/fb_login/"
-    #@my_url = "http://130.230.144.235:8080/fb_login/"
+  def facebookSettings
+    
+    if params["hide"] == "true"
+      render :update do |page|
+        page["facebook_settings"].replace_html :partial => 'facebook_settings'
+      end
+      return
+    end
     
     if not session[:username]
-      puts "fb_login"
       redirect_to :action => "login", :controller => "user"
       return
     else
       @user = User.find_by_username(session[:username]) 
     end
-    
-    
-    # Vaihe 1.
-    if not params["code"] or params["code"].empty?
-      puts "redirecting to oauth.."
-            
-      puts "myuri: #{@my_url}"
-      @dialog_url = "https://www.facebook.com/dialog/oauth?client_id=" + @fb_app_id + "&redirect_uri=" + @my_url + "&scope=email,read_stream,user_photos"
-      puts "d uri: #{@dialog_url}"   
-      render "fb_redirect_to_authentication.html"
-      return
-          
-        
-    # Vaihe 2.
-    else
-      puts "Oauth completed.. Get token.."
-      
-      code = params["code"]  
-      token_path = "/oauth/access_token?client_id=" + @fb_app_id + "&redirect_uri=" + @my_url + "&client_secret=" + @fb_app_secret + "&code=" + code
-      res = HttpRequest.new(:get, token_path).send(@og_host)
-      
-      # If token was received
-      if res and res.code == "200"
-        puts "vastatus:"
-        @access_token = res.body
-        puts "token: " + @access_token
-        token = @access_token.sub('access_token=', '')
-        
-        # Gets user id
-        res = HttpRequest.new(:get, "/me?#{@access_token}").send(@og_host)
-        user_info = JSON.parse(res.body)
-        #puts user_info.to_s
-        #puts "Nimi: #{user_info["name"]}"
-        puts "ID: #{user_info["id"]}"
-        s_id = user_info["id"]
-        
-        if s_id and token
-          ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, :service_type => "facebook", :s_id => s_id, :s_token => token)
-        else
-          render :text => "Error could not fetch token!", :status => 409
-          return
-        end
 
+
+    # Ensures that user has virtual_container called: facebook_container
+    VirtualContainerManager.new(@user, "facebook_container")
+
+    # User's virtual containers
+    @v_containers = @user.devices.find(:all, :conditions => ["dev_type = ?", "virtual_container"])
+    
+    # Checks if user already has auth token for facebook
+    si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "facebook"])
+    if si
+      @fb_auth_token = si
+    else
+      @fb_auth_token = nil
+    end
+    
+    # Get user's photo albums from facebook
+    @photo_albums = {}
+    if @fb_auth_token
+      
+      begin
+          path = "/me/albums?access_token=#{@fb_auth_token.auth_token}"
+          res = HttpRequest.new(:get, path).send(@@fb_graph_uri)
+          
+          photo_albums = JSON.parse(res.body)
+          photo_albums = photo_albums["data"]
+
+          photo_albums.each do |album|
+            @photo_albums.merge!({album["name"] => album["id"]})
+          end
+
+      rescue Exception => e
+        putsE(e)
+      end
+
+    else
+      # URL where user gives access to Facebook account
+      @my_url = "#{@@http_host}/facebook_callback"
+      @facebook_authentication_url = "https://www.facebook.com/dialog/oauth?client_id=" + @@fb_app_id + "&redirect_uri=" + @my_url + "&scope=email,read_stream,user_photos,user_videos,friends_photos,friends_videos,user_events,friends_events,read_friendlists,offline_access,publish_stream"
+    end
+    
+    render :update do |page|
+      page["facebook_settings"].replace_html :partial => 'facebook_settings'
+    end
+    return 
+  end
+  
+  
+  
+  
+  
+  #
+  #   - Gets authentication token from facebook. 
+  #   - Redirects to settings page when successful.
+  #   - Returns 409 if errors occur
+  def facebook_callback
+
+    begin
+      
+      @my_url = "#{@@http_host}/facebook_callback"
+      
+      if not session[:username]
+        redirect_to :action => "login", :controller => "user"
+        return
       else
-        puts "Could not get fb auth token.."
+        @user = User.find_by_username(session[:username]) 
       end
       
-      redirect_to "/user/#{session[:username]}/settings"
-      #render :text => "Token was fetched and saved!", :status => 200
+      if not params["code"] or params["code"].empty?
+        raise Exception.new("Error with parameters!")
+        
+      else
+        
+        code = params["code"]  
+        token_path = "/oauth/access_token?client_id=" + @@fb_app_id + "&redirect_uri=" + @my_url + "&client_secret=" + @@fb_app_secret + "&code=" + code
+        res = HttpRequest.new(:get, token_path).send(@@fb_graph_uri)
+        
+        # If token was received
+        if res and res.code == "200"
+  
+          @access_token = res.body
+  
+          token = @access_token.sub('access_token=', '')
+          
+          # Gets user info
+          res = HttpRequest.new(:get, "/me?#{@access_token}").send(@@fb_graph_uri)
+          user_info = JSON.parse(res.body)
+
+          s_user_id = user_info["id"]
+          s_username = user_info["name"]
+          
+          if s_user_id and token
+            # Facebook does not have auth_secret, only auth_token
+            ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                          :service_type => "facebook", 
+                                                                          :s_user_id => s_user_id, 
+                                                                          :auth_token => token,
+                                                                          :s_username => s_username)
+          else
+            raise Exception.new("Error could not fetch token!")
+          end
+  
+        else
+          raise Exception.new("Could not get fb auth token..")
+        end
+        
+      end
+      
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
       return
     end
+      
+    redirect_to "/user/#{session[:username]}/settings"
+    return
  end  
   
   
   #
   #   Deletes the access token of facebook
   #
-  def fbDeleteToken
-    
-    puts "poispoispois...tytydyydydyydy!"
+  def facebookDeleteToken
     
     if not session[:username]
-      puts "fb_login"
       render :text => "User not logged in!", :status => 401
       return
     else
@@ -2211,11 +2476,393 @@ class UserController < ApplicationController
   end
   
   
-  def fbSettings
+
+  
+  # Publish a photo from the server to Facebook
+  # Parameters: 'file_uri' - uri to the photo in the server
+  #              authentication parameters
+  # Returns: 200 - Published photo to Facebook
+  #          401 - Authentication failed
+  #          409 - Error
+  def facebookPublishPhoto
+
+    if not @auth_user
+      puts "Authentication failed!"
+      render :text => "Unauthorized - 401", :status => 401
+      return
+    end
     
-    @og_host = @@og_host
+    # Authenticated user
+    @user = @auth_user
+
+     
+    begin
+
+      if params["file_uri"] 
+        
+        # The file_uri points to a file in VisualREST
+        @devfile = getDevfileFromURI(params["file_uri"])
+             
+        @device = Device.find_by_id(@devfile.device_id)
+             
+        # Return true, if @user is authorized to devfile
+        if not authorizedToDevfile(@devfile.id)
+          raise Exception.new("Not authorized for the file!")
+        end
+        
+        @blob = Blob.find_by_id(@devfile.blob_id)
+        if @blob.uploaded == false
+          raise Exception.new('The file is not uploded on the server')
+        end
+      else
+          raise Exception.new("parameter file_uri was nil!")
+      end
+      
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error in publishing to Facebook, problem with filepath!", :status => 409
+      return
+    end
+    
+   
+    
+    begin
+      # Checks that user already has auth token for facebook
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "facebook"])
+      if si
+        @fb_auth_token = si
+      else
+        raise Exception.new("Error, couldn't find service information for Facebook account")
+      end
+     
+      if @devfile == nil || @blob == nil || @device == nil
+        raise Exception.new("Devfile, device or blob not found!")
+      end
+      
+      url = URI.parse( @@fb_graph_uri + "/" + @fb_auth_token.s_user_id.to_s + "/photos")
+      
+      path_to_file = "public/devfiles/" + @devfile.device_id.to_s + "/" + @blob.blob_hash + "_" + @devfile.name
+      
+      if @device.dev_type == "virtual_container"
+        
+        # The file is on a virtual_container, Find the device's git repository
+        if not File.exists?("private/#{@device.id}/.git")
+          raise Exception.new("Git repository for the device was not found!")
+        else
+          @repo = Grit::Repo.new("private/#{@device.id}/.git")
+        end
+           
+        # Get the blob data
+        repoBlob = @repo.blob(@blob.blob_hash)
+        if repoBlob == nil
+          raise Exception.new("Blob was not found on the server")
+        end
+  
+        path_to_file = "private/#{@device.id}#{@devfile.path}#{@devfile.name}"
+        if not (File.exists?("private/#{@device.id}#{@devfile.path}") && File.directory?("private/#{@device.id}#{@devfile.path}"))
+          FileUtils.mkdir_p("private/#{@device.id}#{@devfile.path}")      
+        end 
+        # Save from git to a file in path 'path_to_file'
+        File.open(path_to_file, "wb") { |f|   
+          f.write(repoBlob.data)
+        }
+      end
+    
+      
+      File.open(path_to_file) do |photo|
+
+        req = Net::HTTP::Post::Multipart.new( url.path,
+          "source" => UploadIO.new(photo, @devfile.filetype, @devfile.name), "access_token" => @fb_auth_token.auth_token )
+         
+        http = Net::HTTP.new(url.host, url.port)
+        if url.scheme == 'https'
+          http.use_ssl = true
+          http.ssl_timeout = 2  
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+        
+        res = http.start {|ht| ht.request(req) }
+
+      
+      
+        # Check if the file is added to Facebook from response
+        if res.code.to_s != "200"
+          raise Exception.new("Could not upload to Facebook.")
+        else
+          # Add metadata to the file on server
+          type = MetadataType.find_by_name("facebook_id")
+          value = JSON.parse(res.body.to_s)["id"]
+  
+          metadata = Metadata.find(:first, :conditions => ['metadata_type_id = ? and devfile_id = ?', type.id, @devfile.id])
+          if metadata == nil
+            metadata = Metadata.find_or_create_by_value_and_blob_id_and_devfile_id_and_metadata_type_id(value, nil, @devfile.id, type.id)
+          else
+            metadata.update_attribute(:value, value)
+          end
+  
+        end
+      end
+
+
+      if @device.dev_type == "virtual_container"
+        # Delete the essence that was saved from git to the disk
+        begin
+          if File.exists?(path_to_file)
+            FileUtils.rm_f(path_to_file)
+            puts "deleted the essence that is still stored in git.."
+          else
+            puts "Essence not found..."
+          end
+        rescue => e
+          puts "Error deleting essence: #{e}"
+        end
+      end
+
+
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end 
+  
+    render :text => "Succesfully published photo to Facebook!", :status => 200
+    return
+  end
+  
+  
+  # Write on user's Facebook wall
+  # Parameters: 'message' - Message that will be published on the user's wall
+  #              authentication parameters
+  # Returns: 200 - Published message on Facebook wall
+  #          401 - Authentication failed
+  #          409 - Error
+  def facebookWriteOnWall
+
+    if not @auth_user
+      puts "Authentication failed!"
+      render :text => "Unauthorized - 401", :status => 401
+      return
+    end
+    
+    # Authenticated user
+    @user = @auth_user
+
+     
+    begin
+
+      if params["message"] 
+        @message = params["message"]
+      else
+          raise Exception.new("parameter message was nil!")
+      end
+      
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error in publishing to Facebook, problem with 'message'!", :status => 409
+      return
+    end
+    
+   
+    begin
+      # Checks that user already has auth token for facebook
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "facebook"])
+      if si
+        @fb_auth_token = si
+      else
+        raise Exception.new("Error, couldn't find service information for Facebook account")
+      end
+     puts "tee kutsu"
+      path = "/" + @fb_auth_token.s_user_id.to_s + "/feed?access_token=#{@fb_auth_token.auth_token}&message=#{CGI::escape(@message)}"
+
+          puts path
+
+      res = HttpRequest.new(:post, path).send(@@fb_graph_uri)
+               puts res.code
+               puts res.body
+      # Check if the request was successful
+      if res.code.to_s != "200"
+        raise Exception.new("Problem writing on Facebook wall.")
+      end
+
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end 
+  
+    render :text => "Succesfully wrote on Facebook wall!", :status => 200
+    return
+  end
+  
+  
+  
+  
+  
+  
+  # POST to /user/:username/facebookImportAlbum
+  # Parameters: - Authentication parameters
+  #             - 'container_name' - container where the files will be imported to
+  #             - 'album_id' - ID of the album to be imported
+  # Returns: - 200 - Success
+  #          - 409 - Failure
+  def facebookImportAlbum
+    
+    begin
+    
+      puts "facebookImportAlbum"
+    
+      if not @auth_user
+        raise Exception.new("Problem authenticating!")
+      end
+      
+      @user = @auth_user
+
+
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "facebook"])
+      if not si
+        raise Exception.new("Service information for Facebook was not found!")
+      end
+      
+      @fb_auth_token = si.auth_token
+    
+      if params["container_name"]
+        @container_name = params["container_name"]
+      else
+        raise Exception.new("Parameter 'container_name' was not found!")
+      end
+    
+      virtualContainerManager = VirtualContainerManager.new(@user, @container_name)
+
+      if params['album_id']
+        @album_id = params['album_id']
+      else
+        raise Exception.new("Parameter 'import_album_id' was not found!")
+      end
+
+
+      puts "Container name: #{@container_name}. Album id: #{@album_id}."
+          
+      # Album information
+      res = HttpRequest.new(:get, "/#{@album_id}?access_token=#{@fb_auth_token}").send(@@fb_graph_uri)
+      puts res.code
+      if res.code.to_s != "200"
+        raise Exception.new("Could not find album info from Facebook!")
+      end
+
+      album_info = JSON.parse(res.body)
+      #puts JSON.pretty_generate(JSON.parse(res.body))      
+      
+      # Photos of the album
+      res = HttpRequest.new(:get, "/#{@album_id}/photos?access_token=#{@fb_auth_token}").send(@@fb_graph_uri)
+      
+      counter = 0
+      
+      if res.code == "200" and res.body != ""
+              
+        album_photos = JSON.parse(res.body)["data"]
+        album_photos.each do |photo|
+
+          # From this url the photo will be downloaded to VisualREST
+          photo_url = URI.parse(photo["source"].to_s)
+         
+          photo_essence = HttpRequest.new(:get, photo_url.path).send("http://#{photo_url.host}").body
+    
+          # The picture name is composed of "album name" and "photo id"
+          pic_name = '/' + album_info["name"] + "_#{photo["id"]}.jpg"
+          pic_name = pic_name.sub(' ', '_')
+          
+          virtualContainerManager.addFile(pic_name, photo_essence)
+          
+          virtualContainerManager.addMetadata(pic_name, "origin", "facebook")
+          
+          if photo["name"]
+            virtualContainerManager.addMetadata(pic_name, "description", photo["name"].to_s)
+          end
+          
+          if photo["source"]
+            virtualContainerManager.addMetadata(pic_name, "url", photo["source"].to_s)
+          end
+
+          if photo["id"]
+            virtualContainerManager.addMetadata(pic_name, "facebook_id", photo["id"].to_s)
+          end
+
+          counter += 1
+
+        end
+      end
+      
+      virtualContainerManager.commit
+      d = virtualContainerManager.getDeviceObject
+
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error importing album from Facebook: #{e.to_s}", :status => 409
+      return
+    end
+
+    render :text => "Imported #{counter} photos from Facebook to: #{@container_name}", :status => 200
+    return
+    
+  end
+
+    
+
+
+  def facebookConnected
+    
+    begin
+      if not @auth_user
+        raise Exception.new("Authentication failed!")
+      end
+      
+      # Authenticated user
+      @user = @auth_user
+      
+      # Find Service Information for Facebook
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "facebook"])
+      if not si
+        render :text => "No access token for facebook was found!", :status => 401
+        return
+      end
+      
+      # Test that the auth_token is still active
+      path = "/me?access_token=#{si.auth_token}"
+          
+      res = HttpRequest.new(:get, path).send(@@fb_graph_uri)
+      
+      if res.code.to_s != "200"
+        raise Exception.new("Access token might be old!")
+      end
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error, couldn't find access token to Facebook': #{e.to_s}", :status => 409
+      return
+    end  
+    
+    puts "Facebook access token is valid."
+    render :text => "Facebook access token is valid.", :status => 200
+    return
+    
+  end
+
+  
+  
+  #######
+  ## TESTING STUFF
+  #######
+  def fbTestingStuff
+    # Nothing needed here.
+    # Loads the testing window.
+    
+  end
+  
+  
+  def fbTestingStuff2
+    
+    
+
     if not session[:username]
-      puts "fbSettings"
       redirect_to :action => "login", :controller => "user"
       return
     else
@@ -2238,124 +2885,143 @@ class UserController < ApplicationController
     end
     # Get user's photo albums from face book
 
-    @photo_albums = {}
+   # @photo_albums = {}
     if @fb_auth_token
       # Photo albums
       begin
-        #timeout(10.seconds) do
-          path = "/me/albums?access_token=#{@fb_auth_token.s_token}"
-          res = HttpRequest.new(:get, path).send(@og_host)
+        
+        # Must match with '/xxx/xxx' or '/xxx'
+        if params[:fb_graph_test] && ( params[:fb_graph_test] =~ /^\/[\w]+$/ || params[:fb_graph_test] =~ /^\/[\w]+\/[\w]+$/ )
           
-          photo_albums = JSON.parse(res.body)
-          photo_albums = photo_albums["data"]
-          puts photo_albums.to_s
-          photo_albums.each do |album|
-            puts "album name: " + album["name"].to_s + "  id  " + album["id"]
-            @photo_albums.merge!({album["name"] => album["id"]})
+          @fb_query_param = params[:fb_graph_test]
+          @fb_previous_request = nil
+          if params["fb_previous_request"]
+            @fb_previous_request = params["fb_previous_request"]
           end
+          
+          puts "HAETTIIN GRAPHISTA JOTAIN!!!"
+          path = params[:fb_graph_test] + "?access_token=#{@fb_auth_token.auth_token}&metadata=1"
+        
+          response = HttpRequest.new(:get, path).send(@@fb_graph_uri)
+          
+        
+          
+          @fb_the_response_for_test = ""
+          @connection_list = {}
+          @album_list = {}
+          @object_info = {}
+          @fb_object_type = nil
+          @object_connections = {}
+          @fb_picture_object = nil
 
-        #end #timeout
+      
+               #   @fb_the_response_for_test += JSON.pretty_generate(JSON.parse(response.body))
+                  puts JSON.pretty_generate(JSON.parse(response.body))
+      
+          # Connections - if the query was made to a second level object
+          if params[:fb_graph_test] =~ /^\/[\w]+\/[\w]+$/
+            @fb_object_type = params[:fb_graph_test].split('/')[2]
+            
+            connections = JSON.parse(response.body)
+            connections = connections["data"]
+            
+            if @fb_object_type == "albums"
+              connections.each do |connection|
+                @album_list.merge!({ connection["id"] => { "name" => connection["name"], "from" => connection["from"]["name"], "fromid" => connection["from"]["id"]}})
+              end  
+            
+            elsif      
+              connections.each do |connection|
+                @connection_list.merge!({ connection["id"] => connection["name"]})
+              end
+            end
+            
+            
+          
+          # Info about an object
+          elsif params[:fb_graph_test] =~ /^\/[\w]+$/
+            me = JSON.parse(response.body)
+            me.each do |x,y|
+              # Hide these for now, from 'user'
+              if x == "metadata" || x == "timezone" || x == "locale" || x == "verified" 
+
+              # Hide these for now, from 'photo'
+              elsif x == "comments" || x == "images" || x == "likes" || x == "position" ||
+                x == "icon" || x == "source" || x == "height" || x == "width"
+                
+              # Hide these for now, from 'album'
+              elsif x == "can_upload" || x == "privacy"
+                
+              elsif x == "picture"
+                @fb_picture_object = y
+
+              elsif x == "from"
+                @object_info.merge!({ x => {"id" => y["id"], "user" => y["name"] }})
+                                 
+              elsif x == "type"
+                @fb_object_type = y
+                
+              else
+                @object_info.merge!({x => y})
+              end
+            end
+
+          else
+            @fb_the_response_for_test += JSON.pretty_generate(JSON.parse(response.body))
+#            puts @fb_the_response_for_test
+          end
+          
+          
+          if @fb_object_type == "user"
+            @object_connections.merge!({ "Photo albums" => params[:fb_graph_test] + "/albums",
+                                       # "events" => params[:fb_graph_test] + "/events",
+                                         "feed" => params[:fb_graph_test] + "/feed",
+                                         "friends" => params[:fb_graph_test] + "/friends", 
+                                        # "mutualfriends" => params[:fb_graph_test] + "/mutualfriends",
+                                         "Photos the user is tagged in" => params[:fb_graph_test] + "/photos",
+                                         "Profile picture" => params[:fb_graph_test] + "/picture",
+                                         "Posts by the user" => params[:fb_graph_test] + "/posts"})
+          
+          elsif @fb_object_type == "album"
+            @object_connections.merge!({ "Photos of the album" => params[:fb_graph_test] + "/photos"})
+          end
+          
+          
+        else
+          @fb_the_response_for_test = "You haven't made a test yet!"
+        end
+        
       rescue Exception => e
         putsE(e)
+                 
+        if e.to_s[0..2] == "302"
+          
+          @fb_the_response_for_test = "<br />"
+          @kuva_prkl = e.to_s[5..-1]
+          @fb_object_type = "User's profile picture"
+          
+        else
+          @fb_the_response_for_test = "ERROR! Problem with faulty parameter or ACCESS TOKEN EXPIRED?  Token is renewed in settings: <a href='/user/"+ session[:username] +"/settings'>Settings</a><br /> Delete the Facebook token and get a new one."
+        end 
+                 
+        
+
+
       end
 
     end
+    
     
     render :update do |page|
-      page["import_content_from_fb"].replace_html :partial => 'import_content_from_fb'
+      page["fb_response_for_test"].replace_html :partial => 'fb_response_for_test'
     end
     return 
-  end
-  
 
-  def fbImportFromAlbums
-    puts "fbImportFromAlbums"
-    # Tähän viä dropdown johon haetann??
-    @og_host = @@og_host
-    if not session[:username]
-      redirect_to :action => "login", :controller => "user"
-      return
-    else
-      @user = User.find_by_username(session[:username]) 
-    end
-    si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "facebook"])
-    if not si
-      render :text => "No access token for facebook was found!", :status => 401
-      return
-    end
-    @fb_auth_token = "access_token=#{si.s_token}"
-    puts "token: #{@fb_auth_token}"
-    
-    if params["container_name"]
-      container_name = params["container_name"]
-    else
-      container_name = "facebook_container"
-    end
-    
-    virtualContainerManager = VirtualContainerManager.new(@user, container_name)
-    
-    params['checked_albums'].each do |row|
-      if row.second == "1"
-        puts "albumi: " + row.first + " oli chekattu!"
-        
-        begin
-        
-          i = 0
-          
-          # Album information
-          res = HttpRequest.new(:get, "/#{row.first}?#{@fb_auth_token}").send(@og_host)
-          album_info = JSON.parse(res.body)
-          
-          # Photos of the album
-          res = HttpRequest.new(:get, "/#{row.first}/photos?#{@fb_auth_token}").send(@og_host)
-          if res and res.code == "200" and res.body != ""
-            
-            album_photos = JSON.parse(res.body)
-            album_photos = album_photos["data"]
-               
-            album_photos.each do |photo|
-              puts "..photo desc: " + photo["name"].to_s
-              puts "..photo url: " + photo["source"].to_s
-              photo_url = URI.parse(photo["source"].to_s)
-             
-              photo_essence = nil
-              photo_essence = HttpRequest.new(:get, photo_url.path).send("http://#{photo_url.host}").body
-        
-              pic_name = '/' + album_info["name"] + "_#{i.to_s}.jpg"
-              pic_name = pic_name.sub(' ', '_')
-              
-              virtualContainerManager.addFile(pic_name, photo_essence)
-              
-              virtualContainerManager.addMetadata(pic_name, "origin", "facebook")
-              
-              if photo["name"]
-                virtualContainerManager.addMetadata(pic_name, "description", photo["name"].to_s)
-              end
-              
-              if photo["source"]
-                virtualContainerManager.addMetadata(pic_name, "url", photo["source"].to_s)
-              end
-              
-              
-              i += 1
-            end
-          end
-        rescue Exception => ex
-          putsE(ex)
-        end
-      else
-        puts "albumi: " + row.first + " EI OLLU chekattu!"
-      end
-    end
-    
-    virtualContainerManager.commit
-    d = virtualContainerManager.getDeviceObject
-    
-    redirect_to "/user/#{@user.username}/device/#{d.dev_name}/files"
-    #render :text => "jepa", :status => 200
-    return
-  end
 
+  end#### END TESTING STUFF
+     ######################
+     
+     
 
 
 ##################################################################################
@@ -2369,10 +3035,13 @@ class UserController < ApplicationController
     
     begin
       
-      @dropbox_host = @@dropbox_host
-      @db_app_id = @@db_app_id
-      @db_app_secret = @@db_app_secret
-      
+      if params["hide"] == "true"
+        render :update do |page|
+          page["dropbox_settings"].replace_html :partial => 'dropbox_settings'
+        end
+        return 
+      end
+
       if not session[:username]
         puts "db_login"
         redirect_to :action => "login", :controller => "user"
@@ -2393,59 +3062,58 @@ class UserController < ApplicationController
     
     
     
-      # Ensures that user has virtual_container called: facebook_container
+      # Ensures that user has virtual_container called: dropbox_container
       VirtualContainerManager.new(@user, "dropbox_container")
   
       # User's virtual containers
       @v_containers = @user.devices.find(:all, :conditions => ["dev_type = ?", "virtual_container"])
       
-      # Chacks if user already has auth token for facebook
+      # Checks if user already has auth token for facebook
       si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "dropbox"])
       
       
       # If user already had auth token, finds dropbox root folders
       @db_dirs = []
       if si
-        puts "oli"
-        @db_auth_token = si
-        
-        i = 0
-        begin
-          filepath = "/metadata/dropbox/"
-          path = DropboxHelper.new(@user).dbCalculateSignaturedPath(@@dropbox_host, filepath,si,true)
-          res = HttpRequest.new(:get, path).send(@dropbox_host)
-          puts res.code.to_s
-          puts res.body.to_s
-   
-          if res.code.to_s == "200"
-            info = JSON.parse(res.body)
-            if info and info["contents"]
-              info["contents"].each do |cont|
-                if cont["is_dir"]
-                  
-                  puts "Dir: #{cont["path"]}"
-                  puts "   modified: #{cont["modified"]}"
-                  
-                  @db_dirs << cont["path"]
-                end
-              end
-            end
-          else
-            puts "Other dropbox error!"
-          end
-        
-        rescue Exception => e
-          puts "1"
-          putsE(e)
-          i += 1
-          puts "Err: #{i.to_s}"
-          sleep(0.5)
-          retry if i < 5
-          puts "2"
-        end
 
+        @db_auth_token = si        
+      
+        helper = DropboxHelper.new(@user)
+          
+        info = helper.getUserInfo
+        if info == "ERROR"
+          raise Exception.new("Problem with getting user info from Dropbox")
+        end
+        @db_authenticated = "true"
+          
+        if info and info != nil
+          @db_display_name = info["display_name"]
+          @db_email = info["email"]
+          @db_uid = info["uid"]
+        end        
+          
+        # The changed value is not used here. It is used when looking requesting for changes in a directory
+        metadatas= helper.getMetadatas("/")
+#        puts JSON.pretty_generate(metadatas)
+          
+        metadatas["contents"].each do |content|
+          if content["is_dir"]
+            @db_dirs << content["path"]
+          #  puts "Folder: #{content['path']}"
+          #  puts "      -Modified: #{content['modified']}"
+          #  puts "      -rev: #{content['rev']}"  
+            end
+        end
+          
+          
+      # Else user doesn't yet have auth token
       else
+
         @db_auth_token = nil
+
+        # First get the token
+        dropboxOAuthStep1
+      
       end
 
     rescue Exception => e
@@ -2460,27 +3128,52 @@ class UserController < ApplicationController
   end
   
   
-  def getDropboxToken
+  def dropboxOAuthStep1
     
     begin
-      @user = User.find_by_username(session[:username])
-      email = params["uname"] #"hermannihiiri.tty@gmail.com"
-      password = params["passw"] #"hermannittyhiiri"
+
+      timestamp = Time.now.to_i
+      nonce = rand(10 ** 30).to_s.rjust(30,'0')      
+      path = "/1/oauth/request_token"
       
-      path = "/0/token?email=#{email}&password=#{password}&oauth_consumer_key=#{@@db_app_id}"
-      res = HttpRequest.new(:get, path).send(@@dropbox_host)
-      puts res.body.to_s
+      params = "oauth_consumer_key=#{@@db_app_id}&oauth_nonce=#{nonce}&oauth_signature_method=PLAINTEXT" +
+               "&oauth_timestamp=#{timestamp}&oauth_version=1.0"
       
-      if res.code.to_s != "200" or res.code.to_s != "304" 
-        info = JSON.parse(res.body)
-        if info["token"] and info["secret"]
-          ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, :service_type => "dropbox", :s_id => info["secret"], :s_token => info["token"])
-        else
-          render :text => "Error could not fetch token!", :status => 409
-          return
-        end
+      signature =  @@db_app_secret + "%26"            
+                 
+      head_params = 'OAuth realm="https://api.dropbox.com/1/oauth/request_token", oauth_consumer_key="' + @@db_app_id + '", oauth_nonce="'+ nonce + '", oauth_signature_method="PLAINTEXT"' +
+               ', oauth_signature="'+ signature +'", oauth_timestamp="'+ timestamp.to_s + '", oauth_version="1.0"'          
+
+                 
+      header = { 'Authorization' => head_params}
+             
+             
+      ####################
+      ###  OAUTH - STEP 1
+      ####################
+      res = HttpRequest.new(:post, path, {}, header, false).send(@@dropbox_host)
+      
+      if res.code.to_s != "200"
+        raise Exception.new("#{res.code.to_s}, #{res.body.to_s}")
       end
       
+      splitted = res.body.split('&')
+      oauth_token_secret = splitted[0].split('=')[1]
+      oauth_token = splitted[1].split('=')[1] 
+      
+      # Save the dropbox_authentication token and token_secret for later use
+      @user = User.find_by_username(session[:username])
+      dropbox_auth = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                   :service_type => "dropbox_auth")                                                              
+      dropbox_auth.update_attribute(:auth_token, oauth_token)#extra_1
+      dropbox_auth.update_attribute(:auth_secret, oauth_token_secret ) #extra_2
+
+
+
+      ##################
+      ### OAUTH - URL for step 2
+      ##################
+      @dropbox_url = "https://www.dropbox.com/1/oauth/authorize?oauth_token=#{oauth_token}&oauth_callback=#{@@http_host}/dropbox_callback&locale=en"      
       
     rescue Exception => e
       putsE(e)
@@ -2488,9 +3181,85 @@ class UserController < ApplicationController
       return
     end
     
-    render :text => "Access token was successfully fetched!", :status => 200
-    return
   end
+  
+  
+  
+  
+  def dropbox_callback
+    
+      begin
+        
+      ##################
+      ### OAUTH - step 3
+      ##################
+        puts "Dropbox OAUTH step 3"
+        if params["oauth_token"] && params["oauth_token"] != nil && params["uid"] && params["uid"] != nil
+          
+          received_oauth_token = params["oauth_token"]
+          received_oauth_uid = params["uid"]
+          
+          # Make sure the user has 'dropbox_auth' process begun
+          @user = User.find_by_username(session[:username])
+          si = ServiceInformation.find_by_user_id_and_service_type(@user.id, 'dropbox_auth')
+          if si == nil || si.auth_secret == nil
+            return
+          end 
+          
+          nonce = rand(10 ** 30).to_s.rjust(30,'0')
+          timestamp = Time.now.to_i
+          signature = @@db_app_secret + "&" + si.auth_secret
+          
+          params = { "oauth_consumer_key" => @@db_app_id, 
+                     "oauth_token" => received_oauth_token,
+                     "oauth_signature_method" => "PLAINTEXT", 
+                     "oauth_signature" => signature,
+                     "oauth_timestamp" => timestamp,
+                     "oauth_nonce" => nonce, 
+                     "oauth_version" => "1.0"}
+          
+          
+          path = "/1/oauth/access_token"
+          res = HttpRequest.new(:post, path, params, nil, false).send(@@dropbox_host)
+
+          if res.code.to_s != "200"
+           raise Exception.new("#{res.code.to_s}, #{res.body.to_s}")
+          end
+          
+          splitted = res.body.split('&')
+          oauth_token_secret = splitted[0].split('=')[1]
+          oauth_token = splitted[1].split('=')[1] 
+          
+                     
+          
+          # Put the dropbox token and secret to database
+          dropbox_si = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                     :service_type => 'dropbox',
+                                                                                     :auth_secret => oauth_token_secret,
+                                                                                     :auth_token => oauth_token,
+                                                                                     :s_user_id => received_oauth_uid)
+          
+          # Remove the temporary 'dropbox_auth' from database, since it is no longer needed
+          sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "dropbox_auth"])
+          sis.each do |si|
+            si.delete
+          end
+                      
+      end #if
+      
+    rescue Exception => e      
+      putsE(e)
+      render :text => "There was an error in step 3 of the Dropbox OAuth", :status => 409
+      return  
+    end
+    
+    redirect_to "/user/#{session[:username]}/settings"
+    return
+    
+  end      
+
+  
+  
   
   
   
@@ -2500,12 +3269,6 @@ class UserController < ApplicationController
       @dir2poll = params["checked_dir"]
       puts "Dir to Poll: #{@dir2poll}"
       
-      
-      @dropbox_host = @@dropbox_host
-      @db_app_id = @@db_app_id
-      @db_app_secret = @@db_app_secret
-      @my_url = "#{@@http_host}/fb_login/"
-      
       if not session[:username]
         puts "db_login"
         redirect_to :action => "login", :controller => "user"
@@ -2514,13 +3277,13 @@ class UserController < ApplicationController
         @user = User.find_by_username(session[:username]) 
       end
       
-      # Ensures that user has virtual_container called: facebook_container
+      # Ensures that user has the selected virtual container
       vM = VirtualContainerManager.new(@user, params["container_name"])
       
       dev_id = vM.getDeviceObject.id
       
       begin
-        # Clears all the old content
+        # Clears all the old content from the container
         dh = DeleteHelper.new(dev_id)
         dh.removeContent
         puts "Old content deleted!"
@@ -2528,7 +3291,7 @@ class UserController < ApplicationController
         putsE(p)
       end
       
-      # Chacks if user already has auth token for facebook
+      # Checks that user already has auth token for dropbox
       si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "dropbox"])
   
       dir2poll = UserDropboxContent.find_or_create_by_user_id_and_path_and_device_id_and_content_type(@user.id, @dir2poll, dev_id, "root")
@@ -2547,7 +3310,6 @@ class UserController < ApplicationController
   
   def dbDeletePoller
     if not session[:username]
-      puts "fb_login"
       render :text => "User not logged in!", :status => 401
       return
     else
@@ -2582,12 +3344,9 @@ class UserController < ApplicationController
   #
   #   Deletes the access token of dropbox
   #
-  def dbDeleteToken
-    
-    puts "poispoispois...tytydyydydyydy!"
+  def dropboxDeleteToken
     
     if not session[:username]
-      puts "fb_login"
       render :text => "User not logged in!", :status => 401
       return
     else
@@ -2610,6 +3369,338 @@ class UserController < ApplicationController
   end
   
   
+  def dropboxConnected
+      
+    begin
   
+      if not @auth_user
+        puts "Authentication failed!"
+        render :text => "Unauthorized - 401", :status => 401
+        return
+      end
+      
+      # Authenticated user
+      @user = @auth_user
+         
+      # Checks if user already has auth token for dropbox
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "dropbox"])
+       
+      # If user already had auth token
+      if not si
+        raise Exception.new("Could not find access token!")
+      end
+
+      # Connect Dropbox and see if the token is valid
+      helper = DropboxHelper.new(@user)
+          
+      info = helper.getUserInfo
+      
+      if info == "ERROR"
+        raise Exception.new("Access token might be old!")
+      end
+      puts info
+
+
+        
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error, couldn't find access token to Dropbox': #{e.to_s}", :status => 409
+      return
+    end
+    
+    render :text => "Dropbox access token is valid.", :status => 200
+    return
+  
+  end
+  
+  
+  
+      ################################
+      ####### TWITTER BEGINS #########
+      ################################
+
+  def twitterSettings
+    
+    begin
+      
+      # If user is closing the settings, nothing more needs to be done
+      if params["hide"] == "true"
+        render :update do |page|
+          page["twitter_settings"].replace_html :partial => 'twitter_settings'
+        end
+        return
+      end
+      
+      @twitter_authentication_url = 
+      @twitter_authenticated = false
+      
+      if not session[:username]
+        puts "twitter_login"
+        redirect_to :action => "login", :controller => "user"
+        return
+      else
+        @user = User.find_by_username(session[:username]) 
+      end
+      
+      # Checks if user already has auth token for twitter
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "twitter"])
+      
+      
+      # If user already had auth token
+      if si
+        @twitter_auth_token = true
+
+        client = TwitterOAuth::Client.new(
+                                    :consumer_key    => @@twitter_consumer_key,
+                                    :consumer_secret => @@twitter_consumer_secret,
+                                    :token           => si.auth_token,
+                                    :secret          => si.auth_secret )
+                               
+        if client.authorized? == false
+          raise Exception.new("Error: Problem connecting to Twitter with users information!")
+        end
+
+        @twitter_authenticated = true
+        
+        info = (client.info)
+   #     puts JSON.pretty_generate(info)
+
+        if info and info != nil
+          
+          @twitter_screen_name = info["screen_name"]
+          @twitter_name = info["name"]
+          @twitter_uid = info["id"]
+          @twitter_statuses_count = info["statuses_count"]
+        end        
+ 
+          
+      # Else user doesn't yet have auth token
+      else
+
+        #################
+        ## OAuth - step 1
+        #################
+        client = TwitterOAuth::Client.new(
+                                    :consumer_key => @@twitter_consumer_key,
+                                    :consumer_secret => @@twitter_consumer_secret )
+                                    
+        request_token = client.request_token(:oauth_callback => @@http_host + "/twitter_callback")
+        
+        twitter_auth = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                   :service_type => "twitter_auth")                                                              
+        twitter_auth.update_attribute(:auth_token, request_token.token)
+        twitter_auth.update_attribute(:auth_secret, request_token.secret )
+
+        
+        @twitter_auth_token = nil
+
+
+        #################
+        ## OAuth - step 2
+        #################
+        # Request token from twitter and give user
+        @twitter_authentication_url = request_token.authorize_url 
+      
+      end
+
+    rescue Exception => e
+      putsE(e)
+    end
+    
+    
+    render :update do |page|
+      page["twitter_settings"].replace_html :partial => 'twitter_settings'
+    end
+    return 
+  end
+
+
+
+  def twitter_callback
+
+        #################
+        ## OAuth - step 3
+        #################
+    
+      begin
+
+        puts "Twitter OAUTH step 3"
+        
+        if params["oauth_token"] && params["oauth_token"] != nil && 
+          params["oauth_verifier"] && params["oauth_verifier"] != nil
+          
+          if not session || session[:username]
+            raise Exception.new("Error: Could not find user in session!")
+          end
+          
+          # Make sure the user has 'twitter_auth' process begun
+          @user = User.find_by_username(session[:username])
+          
+          si = ServiceInformation.find_by_user_id_and_service_type(@user.id, 'twitter_auth')
+          
+          if si == nil || si.auth_token == nil || si.auth_secret == nil
+            raise Exception.new("Error: could not find twitter_auth information!")
+          end 
+          
+          client = TwitterOAuth::Client.new(
+                                    :consumer_key => @@twitter_consumer_key,
+                                    :consumer_secret => @@twitter_consumer_secret )
+          
+          access_token =  client.authorize(
+                            si.auth_token, 
+                            si.auth_secret,
+                            :oauth_verifier => params[:oauth_verifier] )
+          
+          
+                     
+          
+          # Put the twitter token and secret to database
+          twitter_si = ServiceInformation.find_or_create_by_user_id_and_service_type(:user_id => @user.id, 
+                                                                                     :service_type => 'twitter',
+                                                                                     :auth_secret => access_token.secret,
+                                                                                     :auth_token => access_token.token)
+          
+          # Remove the temporary 'twitter_auth' from database, since it is no longer needed
+          puts "user id: #{@user.id}"
+          sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "twitter_auth"])
+          sis.each do |si|
+            si.delete
+          end
+                      
+      end #if
+      
+    rescue Exception => e      
+      putsE(e)
+      render :text => "There was an error in step 3 of the Twitter OAuth", :status => 409
+      return  
+    end
+    
+    redirect_to "/user/#{session[:username]}/settings"
+    return 
+  end
+
+
+
+  def twitterPublish
+    
+    begin
+    
+      if not @auth_user
+        puts "Authentication failed!"
+        render :text => "Unauthorized - 401", :status => 401
+        return
+      end
+
+      # Authenticated user
+      @user = @auth_user
+      
+      if not params[:message] || params[:message] == ""
+        raise Execption.new("Could not find message!")
+      end
+      
+      message = params[:message]
+         
+      # Checks if user already has auth token for twitter
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "twitter"])
+       
+      # If user already had auth token
+      if not si
+        raise Exception.new("Could not find service information!")
+      end
+
+      client = TwitterOAuth::Client.new( :consumer_key    => @@twitter_consumer_key,
+                                         :consumer_secret => @@twitter_consumer_secret,
+                                         :token           => si.auth_token,
+                                         :secret          => si.auth_secret )
+                                         
+      if client.authorized? == false                                        
+        raise Exception.new("Could not connect to twitter!")
+      end                                  
+      
+      # Publish the message in twitter
+      client.update(message) 
+        
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+    
+    render :text => "Published in Twitter: #{message}", :status => 200
+  end
+
+
+  def twitterDeleteToken
+    puts "Remove Twitter token"
+    
+    if not session[:username]
+      render :text => "User not logged in!", :status => 401
+      return
+    else
+      @user = User.find_by_username(session[:username]) 
+    end
+    
+    begin
+      sis = ServiceInformation.find(:all, :conditions => ["user_id = ? and service_type = ? ", @user.id, "twitter"])
+      sis.each do |si|
+        si.delete
+      end
+    rescue Exception => e
+      putsE(e)
+      render :text => "Failed to delete token!", :status => 500
+      return
+    end
+    render :text => "Token deleted successfully!", :status => 200
+    return
+  end
+
+
+  def twitterConnected
+  
+    begin
+
+      if not @auth_user
+        puts "Authentication failed!"
+        render :text => "Unauthorized - 401", :status => 401
+        return
+      end
+
+      # Authenticated user
+      @user = @auth_user
+         
+      # Checks if user already has auth token for twitter
+      si = ServiceInformation.find(:first, :conditions => ["user_id = ? and service_type = ? ", @user.id, "twitter"])
+       
+      # If user already had auth token
+      if not si
+        raise Exception.new("Could not find access token!")
+      end
+
+      client = TwitterOAuth::Client.new( :consumer_key    => @@twitter_consumer_key,
+                                         :consumer_secret => @@twitter_consumer_secret,
+                                         :token           => si.auth_token,
+                                         :secret          => si.auth_secret )
+                                         
+      if client.authorized? == false                                        
+        raise Exception.new("Access token might be old!")
+      end                                  
+        
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error, couldn't find access token to Twitter': #{e.to_s}", :status => 409
+      return
+    end
+    
+    render :text => "Twitter access token is valid.", :status => 200
+    return
+  
+  end
+
+  
+      ################################
+      ####### TWITTER ENDS ###########
+      ################################
+
+
   
 end

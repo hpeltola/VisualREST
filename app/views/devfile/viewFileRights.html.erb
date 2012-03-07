@@ -8,7 +8,7 @@
 	 @fullpath = (@file.path.to_s + @file.name)[1..-1]
    end %>
 
-<p>File: <b><%= @file.name %></b><br/>
+<p>File: <b><a href="<%= ('/user/' + @user.username + '/device/' + @device.dev_name + '/metadatas/' + @fullpath) %>"><%= @file.name %></a></b><br/>
 <a href="<%= ('/user/' + @user.username + '/device/' + @device.dev_name + '/fileversions/' + @fullpath) %>">File versions</a><br/>
 Device: <%= @device.dev_name %><br/>
 </p>
@@ -42,7 +42,7 @@ Device: <%= @device.dev_name %><br/>
 	<% end %>
 	<td>
 	<%= check_box "groups", group.name, options = {:checked => @group_checked[i]} %> 
-	<%= group.name %><br/>
+  <a href="/user/<%= @user.username %>/group/<%= group.name %>"><%= group.name %></a><br/>
 	<% i = i+1 %>
 	</td>
 	<% if (i % cols == 0) %>
@@ -59,9 +59,7 @@ Device: <%= @device.dev_name %><br/>
 </tr>
 
 <tr>
-	<td colspan="<%=cols%>"><%= link_to "Create", :controller => 'user',
-					  :action => 'addGroup',
-					  :username => @user.username %> a new group.</td>
+	<td colspan="<%=cols%>">Manage groups in <a href="/user/<%=@user.username%>/settings">settings</a></td>
 </tr>
 </table>
 <% end %>	  

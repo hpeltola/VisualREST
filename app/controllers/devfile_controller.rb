@@ -7,10 +7,10 @@ class DevfileController < ApplicationController
 
   # Protection from cross site request forgery
   protect_from_forgery :except => [:upload, :requestUploadtest, :isUploadReady, 
-                                    :deleteFile, :editRights, :changeMetadata, :deleteMetadata]
+                                    :deleteFile, :editRights, :changeMetadata, :deleteMetadata, :deleteEssence]
 
   # These methods need authentication:
-  before_filter :authenticate, :only => [:deleteFile, :upload, :beginUpload, :editRights]
+  before_filter :authenticate, :only => [:deleteFile, :upload, :beginUpload, :editRights, :deleteEssence]
   before_filter :authenticateFile, :only => [:getfile, :getMetadatas]
   
   # This is a temporary function, intended for adding metadatatype - backup_recovery_path
@@ -57,6 +57,15 @@ class DevfileController < ApplicationController
   #   Send GET to /user/{username}/device/{devicename}/metadatas/{filepath}/*version [Current]
   def getMetadatas
     
+    if params[:qoption] && params[:qoption]["format"]
+      params[:format] = params[:qoption]["format"]
+    end
+    
+    @json_callback = nil
+    if params[:qoption] && params[:qoption]["json_callback"]
+      @json_callback = params[:qoption]["json_callback"]
+    end
+    
     # host parameter, needed when creating atom-feed
     brp = BlobRepresentation.new(@blob.id)
     @results = []
@@ -68,14 +77,26 @@ class DevfileController < ApplicationController
     puts
     @metadatatypes = MetadataType.find(:all, :order => "name ASC" )
     
+    if params[:format] == "yaml" or params[:format] == "json" 
+      puts "YAMLII"
+      @yaml_results = {}
+      @yaml_results.merge!({brp.get_uri => brp.to_yaml})  
+    end
+    
     @host = @@http_host
     respond_to do |format|
       if params[:format] == nil
         format.html {render :getfile, :layout=>true}
       else
+        puts "no tänne kyl tultiin"
         format.html {render :getfile, :layout=>true}      
         format.atom {render :getfile, :layout=>false }
-        format.yaml {render :text => YAML.dump_stream(brp.to_yaml).to_s, :status => 200, :layout=>false }
+        format.yaml {render :text => YAML.dump(@yaml_results), :layout=>false }
+        if @json_callback == nil
+          format.json {render :text => JSON.dump(@yaml_results), :layout=>false }
+        else
+          format.json {render :text => @json_callback + '(' + JSON.dump(@yaml_results) + ')', :layout=>false }
+        end
       end
     end
     return
@@ -110,6 +131,11 @@ class DevfileController < ApplicationController
       @devfile.update_attribute(:rank, new_rank)
     rescue => e
       puts "Tried to increase rank value for devfile -> failed miserably!"
+    end
+    
+    if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+      headers['Access-Control-Allow-Origin'] = '*'
+      #headers['Access-Control-Request-Method'] = '*'  
     end
     
     # The file was public or requester had permission for it.
@@ -229,22 +255,58 @@ class DevfileController < ApplicationController
   end
   
 
-
-
-
-def checkUserGroupPermission
-  if @devfile.device.user.username == @request_user.username and @devfile.device.user.password == @request_user.password
-    return true
+  def getThumbnail
+    
+    if params["deviceid"] && params["deviceid"] != nil &&
+      params["thumbname"] && params["thumbname"] != nil
+      
+      thumbnail = "public/thumbnails/" + params["deviceid"] + "/" + params["thumbname"] + ".png"
+      
+      if File.exist?(thumbnail)
+      
+        headers['Access-Control-Allow-Origin'] = '*'
+        
+        # send the file by using test_meta_worker's send_data method.
+        sendfile = File.open(thumbnail).read
+        send_data(sendfile, :type => 'image/png',
+                  :filename => params["thumbname"],
+                  :disposition => 'inline')
+        return
+      
+      end
+    end
+    
+    render :text => "Thumbnail not found", :status => 404
+    return
+    
   end
-  allowed = false
-  user_groups = @request_user.groups
-  @devfile.groups.each do |g|
-    if user_groups.find_by_id(g.id) != nil
+
+
+
+  def checkUserGroupPermission
+    if @devfile.device.user.username == @request_user.username and @devfile.device.user.password == @request_user.password
       return true
     end
+    allowed = false
+    user_groups = @request_user.groups
+    
+    # Check if the devfile is in a group the user has authorization to 
+    @devfile.groups.each do |g|
+      if user_groups.find_by_id(g.id) != nil
+        return true
+      end
+    end
+    
+    # Check if the device that holds the devfile is authorized for groups the user is in
+    device = @devfile.device
+    @devfile.device.groups.each do |x|
+      if user_groups.find_by_id(x.id) != nil
+        return true
+      end
+    end
+    
+    return allowed
   end
-  return allowed
-end
 
 
 
@@ -668,6 +730,16 @@ end
     
   end
   
+  def preUpload
+    puts "preUpload STARTED!!!"
+    if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+      headers['Access-Control-Allow-Origin'] = '*'
+      headers['Access-Control-Allow-Methods'] = 'PUT'  
+      #headers['Access-Control-Request-Method'] = '*'  
+    end
+    render :text => "preUpload OK", :status => 200
+  end
+  
   
   # Upload file
   #
@@ -689,6 +761,11 @@ end
   #   (upload must be declared by online with status: uploading_file=>true before this! See online-method.)
   def upload
     
+    if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+      headers['Access-Control-Allow-Origin'] = '*'
+      #headers['Access-Control-Request-Method'] = '*'  
+    end
+    
     # If file was not given as a parameter
     if params[:upload] == nil
       render :text => "Error. No file found.", :status => 409
@@ -706,7 +783,7 @@ end
     puts "filename: " + name
     puts "filetype: " + params[:upload].content_type
     
-    # Checks that the file's and it's version's metadata can not be found from database.
+    # Find the device 
     device = User.find_by_username(params[:username]).devices.find_by_dev_name(params[:devicename])
     
     # If uploading thumbnail, some temporary information must be taken away from the name
@@ -718,8 +795,16 @@ end
     elsif device.dev_type == "virtual_container"
       begin
       
-        addFileToVirtualContainer(device)
+        # Use virtualContainerManager to add the file
+        # Create the manager      
+        @virtualContainerManager = VirtualContainerManager.new(@auth_user, device.dev_name)
         
+        # Add file with the manager
+        @virtualContainerManager.addFile(filepath + @filename, params[:upload].read)
+        
+        # Make the commit
+        @virtualContainerManager.commit
+       
       rescue => exp
         putsE(exp)
         raise exp
@@ -746,6 +831,7 @@ end
       blob = file.blobs.find(:first, :conditions => ["blob_hash = ?", params[:blob_hash]])
     end
     
+    # Checks that the file's and it's version's metadata can be found in database.
     if file == nil or blob == nil
       puts "FILE NOT FOUND: " + name
       render :text => "Error. File's metadata can not be found.", :status => 404
@@ -779,200 +865,100 @@ end
   end
   
   
-  # Adds file to virtual container
-  def addFileToVirtualContainer(device)
 
-    dev_path = "private/#{device.id}/"
-   
-    # create dir if it does not exist
-    if not (File.exists?(dev_path) && File.directory?(dev_path))
-      FileUtils.mkdir_p(dev_path)      
-    end    
-    
-    # If devfile with same name on same device exist, make new blob for the devfile
-    prev_devfile = Devfile.find_by_name_and_path_and_device_id( @filename, '/', device.id)
-    
-    path = File.join(dev_path, @filename)
-    # write the file
-    File.open(path, "wb") { |f|   
-      puts f.to_s
-      f.write(params[:upload].read)
-    }
-    puts "completepath: " + dev_path
-    puts "File " + @filename + " created."
-    
-    # Add the new file to git and create blob
-    addToGitAndCreateBlob(device, dev_path, @filename, prev_devfile)
-    
-    # Delete the file, since it is added to git
-    File.delete(path)    
-  end
-
-  def addToGitAndCreateBlob(device, dev_path, filename, prev_devfile)
-    
-    # If git repository doesn't yet exist for this device, create it
-    if not File.exists?("#{dev_path}.git")
-      # Create new repo
-      @repo = Grit::Repo.init_bare("#{dev_path}.git", {:bare => false})
-    else
-      # Repo already existed
-      @repo = Grit::Repo.new("#{dev_path}.git")
-    end
-    
-    # Add file to repo and make a commit
-    @repo.add("#{dev_path}#{filename}")    
-    @repo.commit_all("new commit")
-
-    commit_hash = @repo.commits.first.id
-    commited_blob = @repo.commits.first.tree.contents.first.contents.first.contents.last
-    
-    
-    # Check type of file
-    contenttype = "unknown"  
-    if not MIME::Types.type_for(filename).to_s.empty?
-        contenttype = MIME::Types.type_for(filename).to_s
-    end
-    
-    # Create thumbnail
-    thumbnail_name = createThumbnail(commited_blob, contenttype, device)
-    
-    
-    # Add blob to database
-    blob = Blob.create(:size => commited_blob.size,
-                       :filedate => DateTime.now,
-                       :uploaded => 1,
-                       :version => 0,
-                       :blob_hash => commited_blob.id,
-                       :thumbnail_name => thumbnail_name)
-           
-    if blob == nil
-      raise Exception.new("Problem creating blob")
-    end       
-           
-    # This is used for making sure old blob won't end up in blobs_in_commit table
-    old_blob = nil
-           
-    # If first version of file, create devfile
-    if prev_devfile == nil     
-      # Add devfile to database
-      devfile = Devfile.create(:device_id => device.id,
-                               :name => filename,
-                               :path => '/',
-                               :filetype => contenttype,
-                               :privatefile => 1,
-                               :blob_id => blob.id)
-    # If adding new version of file, update link to new blob
-    else
-      old_blob_id = prev_devfile.blob_id
+  # Delete essence of the file from the server. 
+  # Parameters: blob_hash - If the blob hash is not defined, removes the most recent blob.
+  #
+  # Essence can't be deleted from virtual containers
+  #
+  # - Removes from database fileuploads entry
+  # - Marks blob uploaded value to false
+  # - Marks blob upload_requested value to null
+  # - Removes the essence from the server
+  #
+  # Returns: Http code 200 - if essence was deleted
+  #          http code 404 - if file's metadata can't be found
+  #          http code 409 - if other error
+  #
+  def deleteEssence
+  
+    begin
+ 
+      # Gets @filename and @path
+      getPathAndFilename 
+      name = @filename 
+      filepath = @path
+      puts "filepath: " + filepath    
+      puts "filename: " + name
       
-      # Update version number of blob
-      old_blob = Blob.find_by_id(old_blob_id)
-      old_blob.follower_id = blob.id
-      old_blob.save
-      blob.version = old_blob.version.to_i+1
-      blob.predecessor_id = old_blob_id
-      blob.save
-      
-      # Update old devfile
-      devfile = prev_devfile
-      devfile.blob_id = blob.id
-      devfile.updated_at = blob.filedate
-      devfile.save
-    end
-              
-    if devfile == nil
-      raise Exception.new("Problem creating devfile")
-    end
-                  
-    # Tell blob which devfile it belongs to 
-    blob.devfile_id = devfile.id
-    blob.save
-    
-    previous_commit = device.commit_id
-                   
-    # Create commit
-    commit = Commit.create(:device_id => device.id,
-                           :commit_hash => commit_hash,
-                           :previous_commit_id => previous_commit)
-    
-    if commit == nil
-      raise Exception.new("Problem creating commit")
-    end
-
-    # create new link between blob and commit
-    blobInCommit = BlobsInCommit.create(:blob_id => blob.id,
-                                        :commit_id => commit.id)
-
-    if blobInCommit == nil
-      raise Exception.new("Problem creating blob in commit")
-    end
-      
-    # Link old blobs into new commit
-    if previous_commit != nil    
-      old_blobs = BlobsInCommit.find_all_by_commit_id(previous_commit)
-      if old_blobs != nil
-        old_blobs.each do |x|
-          if x.blob_id != old_blob_id
-            BlobsInCommit.find_or_create_by_blob_id_and_commit_id(x.blob_id, commit.id)
-          end
+      # Find the device 
+      device = User.find_by_username(params[:username]).devices.find_by_dev_name(params[:devicename])
+  
+      # Essence can't be deleted from a virtual container
+      if device.dev_type == "virtual_container"
+        render :text => "Error: Essence can't be deleted from a virtual container'", :status => 409
+        return        
+      end
+            
+      file = nil
+      if device != nil
+        file = device.devfiles.find(:first, :conditions => ["name = ? and path = ?", name, filepath])
+        if file == nil
+          puts "FILE NOT FOUND: " + name
+          render :text => "Error. File's metadata can not be found.", :status => 404
+          return
+        end
+        
+        if params[:blob_hash]
+          blob = file.blobs.find(:first, :conditions => ["blob_hash = ?", params[:blob_hash]])
+        else
+          blob = file.blobs.find_by_follower_id(nil)
         end
       end
-    end
       
-    # update device info
-    device.update_attribute(:last_seen, DateTime.now)
-    device.update_attribute(:commit_id, commit.id)
-
-  end
-  
-  def createThumbnail(blob, contenttype, device )
-
-    thumb_path = "public/thumbnails/#{device.id}/"
-    
-    thumb_name = blob.id.to_s+".png"
-
-    if contenttype == "image/jpeg" or contenttype == "image/png" or contenttype == "image/gif"
-        createIcon(blob.data, thumb_name, thumb_path)
-        return thumb_name
-        
-    elsif contenttype == "video/x-msvideo"
-      format = blob.name.split(".").last
-      if format == 'avi'
-        vR_default_thumbnail_file = "vR_avi.png"
-      elsif format == 'mov'
-        vR_default_thumbnail_file = "vR_mov.png"
+      # Checks that the file's and it's version's metadata can be found in database.
+      if file == nil or blob == nil
+        puts "Blob not found for file: " + name
+        render :text => "Error. File's metadata can not be found.", :status => 404
+        return
       end
-        
-    elsif contenttype == "application/mswordapplication/x-mswordapplication/x-wordapplication/wordtext/plain"
-      vR_default_thumbnail_file = "vR_doc.png"
-    elsif contenttype == "application/x-ruby"
-      vR_default_thumbnail_file = "vR_ruby.png"
-    elsif contenttype == "text/plain"
-      vR_default_thumbnail_file = "vR_txt.png"
-    else
-      vR_default_thumbnail_file = "vR_unknown.png"
-    end
-    
-    # create dir if it does not exist
-    if not (File.exists?(thumb_path) && File.directory?(thumb_path))
-      FileUtils.mkdir_p(thumb_path)
+      
+      if blob.uploaded == false
+        render :text => "Error: Essence of the file was not on the server.", :status => 409
+        return
+      end
+      
+      # Remove the fileupload entry
+      fup = Fileupload.find_by_blob_id(blob.id)
+      if fup != nil
+        fup.destroy
+      end
+      
+      # Update blob not to be uploaded and upload_requested to nil
+      blob.update_attribute(:uploaded, false)
+      blob.update_attribute(:upload_requested, nil)
+      
+      
+      # Remove the actual essence
+      deletepath = "public/devfiles/" + file.device_id.to_s + "/" + blob.blob_hash + "_" + file.name
+      
+      if File.exists?(deletepath)
+        FileUtils.rm_f(deletepath)
+        puts "deleted the essence..."
+      else
+        puts "Essence not found and could not be deleted..."
+      end
+ 
+    rescue => exp
+      putsE(exp)
+      render :text => "There was an error when trying to delete the essence from the server", :status => 409
+      return
     end
       
-    # Copy default thumbnail to file
-    from = "public/thumbnails/vR_default_thumbnails/" + vR_default_thumbnail_file
-    to = thumb_path+thumb_name
-    
-    # ftools (ruby 1.8.7)
-    #File.copy(from, to )
-    
-    # fileutils (ruby 1.9.2)
-    FileUtils.cp(from, to )
-    
-     
-    return thumb_name
+    render :text => "Essence of the file deleted from the server", :status => 200
+    return
   end
-  
-  
+
 
   
 #  Change metadata or add new metadata
@@ -1156,7 +1142,7 @@ end
               if context 
                 Thread.new{
                   puts "kylla lahtee"
-                  XmppHelper::notificationToContextNode(@devfile, context, "Context content updated!")                 
+                  XmppHelper::notificationToContextNode(@devfile, context, "Context content updated!", "content-added-to-context")                 
                 }
               end
             end

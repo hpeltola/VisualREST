@@ -1,0 +1,19 @@
+<h1>List of metadatavalues for type: <%=@metadatatype.name%></h1>
+<table class="metadatavalues" border="1">
+  <tr>
+    <th>Value</th>  
+    <th>Amount</th>
+  </tr>
+  <% @results.each do |value, amount| %> 
+    <tr>
+      <td>
+        <%=  value  %> 
+      </td>
+      <td>
+        <%=  amount  %>
+      </td>
+    </tr>
+  <% end %>
+</table>
+
+  

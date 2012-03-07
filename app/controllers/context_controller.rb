@@ -1684,7 +1684,7 @@ class ContextController < ApplicationController
         v.each do |did|
           df = Devfile.find_by_id(did)
           puts "devfile_id: #{did}"         
-          XmppHelper::notificationToContextNode(df, cxt, "Context content updated!")
+          XmppHelper::notificationToContextNode(df, cxt, "Context content updated!", "content-added-to-context")
         end
       end
     rescue Exception => exp

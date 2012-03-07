@@ -67,4 +67,36 @@
     }
     
   }
+  
+   // Publish a photo to facebook. 
+ function facebookPublish(file_uri){    
+
+  // var file_uri = document.getElementById('fb_file_uri').value; 
+   // This one makes the request to facebook on server
+      new Ajax.Request('/user/<%= session[:username] %>/facebookPublishPhoto', {asynchronous:true, evalScripts:true, method:'post', 
+        parameters: 'file_uri=' + escape(file_uri) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+  }
+     // Publish a photo to facebook. 
+ function flickrPublish(file_uri){    
+
+  // var file_uri = document.getElementById('fb_file_uri').value; 
+   // This one makes the request to facebook on server
+      new Ajax.Request('/user/<%= session[:username] %>/flickrPublishPhoto', {asynchronous:true, evalScripts:true, method:'post', 
+        parameters: 'file_uri=' + escape(file_uri) + '&hide=false&authenticity_token=' + '<%= form_authenticity_token %>',
+        onSuccess: function(data){ 
+          alert(data.responseText);
+        },
+        onFailure: function(data){
+          alert(data.responseText);
+        }
+      });
+  }
+  
 </script>

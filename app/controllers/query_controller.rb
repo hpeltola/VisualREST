@@ -142,6 +142,112 @@ class QueryController < ApplicationController
     return 90.seconds.ago
   end
 
+  # Return possible values for certain metadatatype
+  #
+  # Usage:
+  #   Send GET to /metadatatype/{metadatatype}
+  #
+  def getPossibleMetadataValues
+    begin
+      
+      if params[:qoption] && params[:qoption][:json_callback]
+        @json_callback = params[qoption][:json_callback]
+      end
+      
+      if params[:qoption] && params[:qoption]["format"]
+       params[:format] = params[:qoption]["format"]
+     end
+      
+      # Find username who is signed in
+      if params[:i_am_client]
+        username = authenticateClient
+      elsif session[:username]
+        username = session[:username]  
+      else
+        username = nil
+      end
+  
+      if username != nil
+        @user = User.find_by_username(username)
+      end  
+          
+      # Get all values of the requested type
+      @metadatatype = MetadataType.find_by_name(params[:metadatatype])
+      
+      if not @metadatatype
+        raise Exception.new("Metadatatype #{params[:metadatatype]} not found")
+      end
+      
+      # Find all values
+      values = Metadata.find_all_by_metadata_type_id(@metadatatype.id)
+      
+      # Here will be the results returned to user
+      @results = Hash.new
+      
+      
+      # Make sure the user is authorized to access the content with these values
+      values.each do |x|
+        # Find the devfile the metadata is related to
+        devfile = x.devfile
+        
+        if devfile.privatefile == true
+          if username == nil || @user == nil
+            next
+          end
+          
+          
+          
+        end
+        
+        # OK, add the file to results
+        if @results.has_key?(x.value)
+          @results[x.value] = @results[x.value] + 1
+        else
+          @results[x.value] = 1
+        end
+        
+      end
+          
+      # host parameter, needed when creating atom-feed
+      if request.ssl?
+        @host = "https://#{request.host}"
+      else
+        @host = "http://#{request.host}"
+      end
+  
+      if request.port != nil and request.port != 80
+        @host += ":#{request.port}"
+      end    
+        
+        
+    rescue Exception => e
+      putsE(e)
+      render :text => "Error: #{e.to_s}", :status => 409
+      return
+    end
+        
+        
+    # Create atom feed
+    @host = @@http_host
+    respond_to do |format|
+      if params[:format] == nil
+        format.html {render :getpossiblemetadatavalues, :layout=>true }
+      else
+        format.html {render :getpossiblemetadatavalues, :layout=>true }
+        format.atom {render :getpossiblemetadatavalues, :layout=>false }
+        format.yaml {render :text => @results.to_yaml, :layout=>false }
+        if @json_callback == nil
+          format.json {render :text => @results.to_json, :layout=>false }
+        else
+          format.json {render :text => @json_callback + '(' + @results.to_json + ')', :layout=>false }
+        end
+      end
+    end
+  end
+
+
+
+
   # Return atom feed of all metadatatypes
   #
   # Usage:
@@ -498,6 +604,11 @@ end
     
     # get context (device and/or user)
     if not getSearchContext
+      if @queryparams[:format] && @queryparams[:format] != "html"
+        render :text => "Nothing found", :status => 404
+        return
+      end
+
       # nothing found
       @nothingfound = true
       render @render
@@ -515,6 +626,7 @@ puts "S C: #{@context.to_s}"
     @showDeletedFiles = false
     @newQueryInterfaceUsed = false
     @only_these_users = nil
+    @json_callback = nil
 
     ### Query parameters should be in form: q[city]=tampere&q[tag]=testi
     if params[:q] &&  params[:q] != nil
@@ -645,6 +757,12 @@ puts "S C: #{@context.to_s}"
           
           elsif key == "order"
             @queryparams.merge!({key => value})
+            
+          elsif key == "format"
+            params[:format] = value
+            
+          elsif key == "json_callback"
+            @json_callback = value
             
           # Show deleted files?
           elsif key == "show_deleted_files" && value == "true"
@@ -833,14 +951,15 @@ puts "S C: #{@context.to_s}"
     
     # if no context and no query specified
     if @context.empty? and @conditions.empty? and @device_ids.empty?
-      if @queryparams[:format] != "atom"
-        @nothingfound = true
-        render @render
-        return
-      else
+      if @queryparams[:format] && @queryparams[:format] != "html"
         render :text => "Nothing found, problem with search parameter type?", :status => 404
         return
       end
+
+      # nothing found
+      @nothingfound = true
+      render @render
+      return
     end
     
     # Is availableFilesOnly set with old way of querying
@@ -865,14 +984,28 @@ puts "S C: #{@context.to_s}"
     makeSearch
    
     if @results.size == 0
-      if @queryparams[:format] != "atom"
-        @nothingfound = true
-        render @render
-        return
-      else
-        render :text => "Nothing found", :status => 404
-        return
+      
+      if @queryparams[:format] && @queryparams[:format] != "html"
+               
+        respond_to do |format|
+          if @queryparams[:format] == "yaml"
+            render :text => "", :status => 200
+          elsif @queryparams[:format] == "json"
+            if @json_callback == nil
+              render :text => "{ }", :status => 200
+            else
+              render :text => @json_callback + '({ })', :status => 200
+            end
+          end
+          
+          return
+        end
       end
+
+      # nothing found
+      @nothingfound = true
+      render @render
+      return
     end    
     
     # Is user signed in
@@ -1017,16 +1150,27 @@ puts "S C: #{@context.to_s}"
           
           # For query results
           else
-            id = @host+url = "/user/" + df.username + "/device/" + df.dev_name + "/files" + df.path + df.name
-            brp = BlobRepresentation.new(df.blob_id).to_yaml
-            @yaml_results.merge!({id => brp})        
+            if @queryparams[:what_to_get] =~ /devices/i
+              # If requesting devices
+              devObject = DeviceObject.new(df)
+              @yaml_results.merge!({devObject.get_uri => devObject.to_yaml})
+              if @queryparams[:json_callback]
+                @json_callback = @queryparams[:json_callback]
+              end
+
+            else
+              # If requesting files
+              id = @host+url = "/user/" + df.username + "/device/" + df.dev_name + "/files" + df.path + df.name
+              brp = BlobRepresentation.new(df.blob_id).to_yaml
+              @yaml_results.merge!({id => brp})        
+            end
           end
           
         rescue Exception => e
           putsE(e)
         end
       end
-      puts @yaml_results.to_s
+      #puts @yaml_results.to_s
     end
 
 =begin
@@ -1076,7 +1220,11 @@ puts "S C: #{@context.to_s}"
         format.html {render @render}
         format.atom { render @render, :layout=>false }
         format.yaml { render :text => YAML.dump(@yaml_results), :layout=>false }
-        format.json { render :text => JSON.dump(@yaml_results), :layout=>false }
+        if @json_callback == nil
+          format.json { render :text => JSON.dump(@yaml_results), :layout=>false }
+        else
+          format.json { render :text => @json_callback + '('+JSON.dump(@yaml_results)+ ')', :layout=>false }
+        end
       end
     end
   end
@@ -1283,146 +1431,7 @@ puts "S C: #{@context.to_s}"
   
   
   
-=begin
-  def clusterResults
-    
-    @no_clusters_uri = request.url.to_s.gsub(/\&?qcluster\[\w+\]=\w+/i, "")
-    @no_clusters_uri = @no_clusters_uri.gsub(/\&?qcluster\[\w+\]/i, "")
-    puts "NO CLUSTERS URI #{@no_clusters_uri}"
-       
-    @clustered_by = ""
-    
-    # Creates ContentObjects of the results
-    @content_objects = []
-    @results.each do |result| 
-      co = ContentObject.new(result, @metadatas)
-      @content_objects << co
-    end
-    
-    
-    
-#    @content_objects.each do |co|
-#      puts "filedate: #{co.updated_at}, name: #{co.name}"
-#    end
 
-    
-    
-    
-    @cluster_objects = []
-    @temp_cluster_objects = Array.new
-    @cluster_count = params[:qcluster].count + 1
-    
-    @set_content_objects = false
-    
-    
-    
-    #
-    #  Clusters by each qcluster key
-    #
-    params[:qcluster].each do |key, value|
-      
-      @cluster_count -= 1
-      puts "Cluster count: #{@cluster_count.to_s}"
-      
-      
-      puts "avain: #{key.to_s}  arvo: #{value.to_s}"
-      
-      if key == nil #|| value == nil
-        next
-      end
-      
-      
-      # Ensures that the given metadata key is valid type, and checks whether it is string, float, or date
-      value_type = MetadataHelper.new.get_metadata_value_type(key)
-      if not value_type
-        puts "value type not found!"
-        next
-      end
-      
-      if @clustered_by.empty?
-        @clustered_by = key
-      else
-        @clustered_by += ", #{key}"
-      end
-    
-     
-     
-     
-      # Sets the maximum range between the metadata values
-      maxRange = value.to_f
-      
-      
-      # Sorts by the clustering metadata key
-      ContentObject.setSortBy(key)
-      @content_objects.sort!
-      
-      
-      
-      # The actual clustering
-      @content_objects.each do |content_obj|
-        
-        value = content_obj.get_value(key)
-        
-        if not value
-          # Currently skipping, later on adds to end of the results, not to a cluster
-          puts "value not found"
-          next
-        end
-        
-        
-        
-        if value_type == :string
-        
-        puts "STRING value type"
-        
-          # Notice! this expects that the values are ordered in alphabetical order!
-          if @cluster_objects.last and value == @cluster_objects.last.get_comparison_value
-            @cluster_objects.last << content_obj 
-          else  
-            cluster_obj = ClusterObject.new(key, @no_clusters_uri, nil, value)
-            cluster_obj << content_obj
-            @cluster_objects << cluster_obj
-            
-          end
-        
-        else  # If not string -> Comparable
-          
-          
-          puts "OTHER THAN STRING Comparable: #{key.to_s}   value: #{value.to_s}"
-          
-          
-          if @cluster_objects.last and value - maxRange < @cluster_objects.last.get_comparison_value
-            @cluster_objects.last << content_obj
-          
-          else  
-            cluster_obj = ClusterObject.new(key, @no_clusters_uri, value, nil)
-            cluster_obj << content_obj
-            @cluster_objects << cluster_obj
-            
-          end
-        end
-        
-      end
-      
-      Thread.new{
-        # Luodaan thumbnailit
-        @cluster_objects.each do |cluster_obj|
-          cluster_obj.generate_thumbnail        
-        end
-      }
-      
-      
-      
-    end
-    
-#    puts "################ sortattu ########################"   
-#    @content_objects.each do |co|
-#      puts "filedate: #{co.updated_at}, name: #{co.name}"
-#    end
-    
-
-  end
-=end
   
   
   def sortBy(metadata_key)
@@ -1622,7 +1631,21 @@ puts "bar"
       @query_processing = true
     end
     
+    @json_callback = nil
+    if params[:qoption] && params[:qoption]["json_callback"]
+      @json_callback = params[:qoption]["json_callback"]
+    end
+    
     @queryparams = params
+
+    if params[:qoption] && params[:qoption]["format"]
+      @queryparams[:format] = params[:qoption]["format"]
+    end
+    
+    if params[:q] && params[:q]["user"]
+      @queryparams[:user] = params[:q]["user"]
+    end
+    
     
     # host parameter, needed when creating atom-feed
     if request.ssl?
@@ -1644,6 +1667,21 @@ puts "bar"
       @users = User.find(:all, :conditions => usersstring)
     end 
     
+    if @queryparams[:format] == "yaml" or @queryparams[:format] == "json"
+      @yaml_results = {}
+      @users.each do |user|
+        begin
+
+          userObject = UserObject.new(user)
+          @yaml_results.merge!({userObject.get_uri => userObject.to_yaml})
+        
+        rescue Exception => e
+          putsE(e)
+        end
+      end
+      #puts @yaml_results.to_s
+    end
+    
     if query_processing_time_begin != nil
       query_processing_time_end = Time.now
       @query_processing_time = query_processing_time_end - query_processing_time_begin
@@ -1658,6 +1696,12 @@ puts "bar"
       else
         format.html {render :searchUsers, :layout=>true }
         format.atom {render :searchUsers, :layout=>false }
+        format.yaml { render :text => YAML.dump(@yaml_results), :layout=>false }
+        if @json_callback == nil
+          format.json { render :text => JSON.dump(@yaml_results), :layout=>false }
+        else
+          format.json { render :text => @json_callback + '(' + JSON.dump(@yaml_results) + ')', :layout=>false }
+        end
       end
     end
     
@@ -1694,8 +1738,24 @@ puts "bar"
   def flickrInstructions
     # do absolutely nothing at all... just render instructions
   end
+  
+  def facebookInstructions
+    # do absolutely nothing at all... just render instructions
+  end
 
+  def dropboxInstructions
+    # do absolutely nothing at all... just render instructions
+  end
+  
+  def twitterInstructions
+    # do absolutely nothing at all... just render instructions
+  end
+  
   def userInstructions
+    # do absolutely nothing at all... just render instructions
+  end
+
+  def containerInstructions
     # do absolutely nothing at all... just render instructions
   end
 
@@ -2846,7 +2906,11 @@ puts "bar"
         # make the where-part of the sql query
         if not @versionlist_conditions
           makeConditions
-          sql += " ( " + @condition_string + @hash_in_where + " ) "
+          if @condition_string != "" || @hash_in_where != ""
+            sql += " ( " + @condition_string + @hash_in_where + " ) "
+          else
+            sql += " false "
+          end
           sql += show_deleted_files_in_where + available_files_only_in_where + @default_id_conditions
         else
           sql += " " + @versionlist_conditions + " " + @default_id_conditions
@@ -2961,6 +3025,7 @@ puts "bar"
           next
         end
         
+        
         # Check if user is in same group as the file
         fileinGroups = DevfileAuthGroup.find_all_by_devfile_id(x.devfile_id)
         hasRight = false
@@ -2972,6 +3037,20 @@ puts "bar"
             break
           end
         end
+
+        if hasRight == true
+          next
+        end
+                
+        # Find device the file is in. Is user authorized to access files of the device.
+        deviceinGroups = DeviceAuthGroup.find_all_by_device_id(x.device.id)
+        deviceinGroups.each do |d|
+          if user_groups.find_by_id(d.group_id) != nil
+            hasRight = true
+            break
+          end
+        end
+        
         if hasRight == true
           next
         end
@@ -3027,6 +3106,15 @@ puts "bar"
             return true
           end
         end
+        
+        # Find device the file is in. Is user authorized to access files of the device.
+        deviceinGroups = DeviceAuthGroup.find_all_by_device_id(first.devfile.device.id)
+        deviceinGroups.each do |d|
+          if user_groups.find_by_id(d.group_id) != nil
+            return true
+          end
+        end
+        
         return false
       end
     else
@@ -3233,54 +3321,7 @@ puts "bar"
     return distances
   end
   
-  
-  # Return true, if @user is authorized to devfile
-  def authorizedToDevfile(fileID)
-    
-    devfile = Devfile.find_by_id(fileID)
-    
-    # Find the devfile
-    if devfile == nil
-      return false
-    end
-    
-    # Is the devfile private
-    if devfile.privatefile == false
-      return true
-    end
-    
-    if @user == nil
-      return false
-    end
-    
-    ## If user is the owner, he is authorized
-    if devfile.device.user.id == @user.id
-      return true
-    end
-    
-    ## Is user in a group that is authorized for the context
-                
-    # Groups that user is in
-    uigroups = Usersingroup.find_all_by_user_id(@user.id)
-    if uigroups == nil
-      return false
-    end
-          
-    # Is group autohorized for the context
-    uigroups.each do |uigroup|
-           
-      group = DevfileAuthGroup.find_by_group_id_and_devfile_id(uigroup.group_id, devfile.id)
-            
-      # If group is authorized for the context, return true
-      if group != nil
-        return true
-      end
-    end
-      
-    return false
-    
-  end
-    
+
     
 
 end

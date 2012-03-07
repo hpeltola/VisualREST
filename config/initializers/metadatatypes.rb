@@ -31,7 +31,9 @@
                               "mail_from" => "string", 
                               "taken" => "datetime",
                               "url" => "string",
-                              "origin" => "string"}
+                              "origin" => "string",
+                              "facebook_id" => "string",
+                              "flickr_id" => "string"}
      
 begin
   # Go through the list of metadatatypes listed above and add missing metadatatypes                                 
@@ -44,5 +46,6 @@ begin
     
   end
 rescue Exception => e
-  puts "Problem initializing metadatatypes!"
+  puts "Error: #{e.to_s}"
+  puts "  -- line: #{e.backtrace[0].to_s}"
 end

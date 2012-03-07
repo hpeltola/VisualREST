@@ -38,7 +38,7 @@
 						<%= file_metadata.path[1..-1] %>
 					</span>
             	<% end %>
-            	<a href ="<%= ('/user/' + @results.first.username + '/device/' + @results.first.dev_name + '/files/' + @fullpath + '?version=' + file_metadata.version.to_s) %>"><%= file_metadata.name %></a>
+            	<a href ="<%= ('/user/' + @results.first.username + '/device/' + @results.first.dev_name + '/metadatas/' + @fullpath + '?version=' + file_metadata.version.to_s) %>"><%= file_metadata.name %></a>
             	<br/>
 				<span class="quitesmall"><%= ("&nbsp;&nbsp;
 									<b>version:</b> " + file_metadata.version.to_s + "<br/>&nbsp;&nbsp;

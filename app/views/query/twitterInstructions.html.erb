@@ -1,0 +1,67 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Twitter integration</h1>
+<p>You can write tweets using VisualREST. The tweets can have links to your public content in VisualREST.
+</p>
+
+<h2>Get authorization token to Twitter</h2>
+<p>First you need to give VisualREST authorization to access your Twitter account. <br />
+  <ul>  
+    <li>Go to 'Settings->Twitter' and click 'authorize'.</li>
+    <li>You will be redirected to Facebook page.</li>
+    <li>When the authorization is granted, you will be redirected back to VisualREST.</li>
+  </ul>
+</p>
+
+
+<br /><br />
+
+<h2>Publish a tweet</h2>
+<p>
+  Tweet can be created using <b>HTTP request</b> or <b>using the form in 'settings->Twitter->Publish in Twitter'</b>.
+</p>
+
+<h3>HTTP request</h3>
+  <li><b>method:</b>     POST</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/twitterPublish</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+    <li><b>message</b>: Message of the tweet.
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br />
+  curl -X POST http://visualrest.cs.tut.fi/user/heikki/twitterPublish 
+  -F "message=A beautiful sunset: http://visualrest.cs.tut.fi/user/heikki/device/visualrest_mail_box/files/sun.jpg" 
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true  
+</p>
+
+
+
+<br /><br />
+
+<h2>Test Twitter access token</h2>
+<p>
+  Access token to Twitter can be tested, to make sure it is valid.
+</p>
+
+<h3>HTTP request</h3>
+  <li><b>method:</b>     GET</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/twitterConnected</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br />
+  curl -X GET http://visualrest.cs.tut.fi/user/heikki/twitterConnected
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true  
+</p>

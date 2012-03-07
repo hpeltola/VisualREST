@@ -5,6 +5,54 @@
 <%end%>
 
 <h1>User instructions</h1>
+
+<h2>Query for users</h2>
+<ul>
+  <li><b>description:</b> Users of the system can be queried. The query must have parameter q[user], the value can be empty.</li>
+  <li><b>method:</b>     GET</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/users</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li><b>q[user]</b>: empty / "username" / "us"
+    <li><b>qoption[format]</b>: "html" / "atom" / "json" / "yaml"</li>
+    <li><b>qoption[json_callback]</b>: "foo" / "bar" / etc.</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL examples:</b><br />
+  curl -X GET http://visualrest.cs.tut.fi/users -F qoption[format]=json -F q[user]= <br /><br />
+  curl -X GET http://visualrest.cs.tut.fi/users -F qoption[format]=json -F q[user]=us
+</p>
+
+
+<br /><br />
+
+
+<h2>Information about certain user</h2>
+<ul>
+  <li><b>description:</b> Get user information. You need to be authenticated for this.</li>
+  <li><b>method:</b>     GET</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>    
+    <li><b>qoption[format]</b>: "html" / "atom" / "json" / "yaml"</li>
+    <li><b>qoption[json_callback]</b>: "foo" / "bar" / etc.</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL examples:</b><br />
+  curl -X GET http://visualrest.cs.tut.fi/user/testuser -F qoption[format]=json   
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true
+</p>
+
+
+
+<br /><br />
+
+
+
   
 <h2>Add thumbnail for user</h2>
 
@@ -25,7 +73,11 @@
   -F i_am_client=true
 </p>
 
-<br />
+
+
+<br /><br />
+
+
 
 <h2>Get user's thumbnail</h2>
 <ul>

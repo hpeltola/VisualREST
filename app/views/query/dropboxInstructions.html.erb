@@ -1,0 +1,58 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Dropbox integration</h1>
+<p>You can keep one folder from your dropbox account synchronized with a virtual container.
+</p>
+
+<h2>Get authorization token to Dropbox</h2>
+<p>First you need to give VisualREST authorization to access content from your Dropbox account. <br />
+  <ul>  
+    <li>Go to 'Settings->Dropbox' and click 'authorize'.</li>
+    <li>You will be redirected to Dropbox page.</li>
+    <li>When the authorization is granted, you will be redirected back to VisualREST.</li>
+  </ul>
+</p>
+
+
+<br /><br />
+
+<h2>Synchronize a folder</h2>
+<p>
+  Synchronization is done with a virtual container called 'dropbox_container'. When the synchronization is started, all previous
+  content in the 'dropbox_container' will be removed.
+  <ul>
+    <li>Go to 'Settings->Dropbox'</li>
+    <li>Select the folder you want to synchronize</li>
+    <li>Press 'Synchronize'.</li>
+    <li>Your content from the Dropbox folder will be synchronized approximately every 10 minutes.</li>
+  </ul>
+</p>
+
+
+
+
+<br /><br />
+
+<h2>Test Dropbox access token</h2>
+<p>
+  Access token to Dropbox can be tested, to make sure it is valid.
+</p>
+
+<h3>HTTP request</h3>
+  <li><b>method:</b>     GET</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/dropboxConnected</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br />
+  curl -X GET http://visualrest.cs.tut.fi/user/heikki/dropboxConnected
+  -F auth_username=heikki -F auth_timestamp=12344334 -F auth_hash=XXXXXXXXXXXXXXXXXXXXXXXXXXX 
+  -F i_am_client=true  
+</p>

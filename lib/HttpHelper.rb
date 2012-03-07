@@ -86,6 +86,11 @@ class HttpRequest
     end
     if res.code.to_s == "417"
       raise Exception.new("Malformed uri. Code: #{res.code.to_s}, #{res.body.to_s}")
+    elsif res.code.to_s == "302"  
+      raise Exception.new("#{res.code.to_s}, #{res["location"]}")
+    elsif res.code.to_s == "304"
+      return res
+      
     elsif res.code.to_s != "202" and res.code.to_s != "200" and res.code.to_s != "201"
       raise Exception.new("#{res.code.to_s}, #{res.body.to_s}")
     else
