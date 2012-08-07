@@ -1,0 +1,112 @@
+<%if @notice %>
+<h1>
+  <%= @notice%>
+</h1>
+<%end%>
+
+<h1>Group instructions</h1>
+Groups can be used for easily sharing content with a predefined set of users.
+Each group has one owner, who is responsible for adding users to the group.
+A member of a group can authorize access to content on their devices for the whole group.
+
+
+
+
+
+
+<h2>Create group</h2>
+<ul>
+  <li><b>description:</b> The user who creates the group, becomes automatically the group owner.</li>
+  <li><b>method:</b>     PUT</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/group/{groupname}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL example:</b><br />
+  curl -X PUT http://visualrest.cs.tut.fi/user/testuser/group/group_for_friends
+  -F auth_username=testuser -F auth_timestamp=1343805199 -F auth_hash=dc87a60feeae3b114133cc578ee01c6cd75990bc
+  -F i_am_client=true
+</p>
+
+
+<br /><br />
+
+
+<h2>Get group info</h2>
+<ul>
+  <li><b>description:</b> Members of a group can  query group info. The info contains list of group members, devices and files authorized for the group</li>
+  <li><b>method:</b>     GET</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/group/{groupname}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+    <li><b>qoption[format]</b>: "html" / "atom" / "json" / "yaml"</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL examples:</b><br />
+  curl -X GET http://visualrest.cs.tut.fi/user/testuser/group/group_for_friends -F qoption[format]=json
+  -F auth_username=testuser -F auth_timestamp=1343805204 -F auth_hash=c578ee01c6cd75990bcdc87a60feeae3b114133c
+  -F i_am_client=true
+  <br /><br />
+  curl -X GET http://visualrest.cs.tut.fi/user/testuser/group/group_for_friends.json
+  -F auth_username=alice -F auth_timestamp=1343805523 -F auth_hash=e01c6cd75990bcdc87a60feeae3b114133cc578e
+  -F i_am_client=true
+  
+</p>
+
+
+<br /><br />
+
+
+<h2>Add/remove user to/from the group</h2>
+<ul>
+  <li><b>description:</b> Owner of the group can add/remove users to/from the group.</li>
+  <li><b>method:</b>     PUT/DELETE</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/group/{groupname}/member/{membername}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL examples:</b><br />
+  curl -X PUT http://visualrest.cs.tut.fi/user/testuser/group/group_for_friends/member/alice
+  -F auth_username=testuser -F auth_timestamp=1343809504 -F auth_hash=8ee01c6cd75990bcdc87a60feeae3b114133cc57
+  -F i_am_client=true
+  <br /><br />
+  curl -X DELETE http://visualrest.cs.tut.fi/user/testuser/group/group_for_friends/member/alice
+  -F auth_username=testuser -F auth_timestamp=1343815523 -F auth_hash=75990bcdc87a60feeae3b114133cc578ee01c6cd
+  -F i_am_client=true
+  
+</p>
+
+
+<br /><br />
+
+
+<h2>Add/remove device to/from the group</h2>
+<ul>
+  <li><b>description:</b> A user can add his/her own device to the group.</li>
+  <li><b>method:</b>     PUT/DELETE</li>
+  <li><b>url:</b>        http://visualrest.cs.tut.fi/user/{username}/group/{groupname}/device/{devicename}</li>
+  <li><b>parameters:</b></li> 
+  <ul>
+    <li>authentication ( i_am_client, auth_username, auth_timestamp, auth_hash )</li>
+  </ul>
+</ul>
+<p>
+  <b>CURL examples:</b><br />
+  curl -X PUT http://visualrest.cs.tut.fi/user/testuser/group/group_for_friends/device/android_device
+  -F auth_username=testuser -F auth_timestamp=1343909504 -F auth_hash=1c6cd75990bcdc87a60feeae3b114133cc578ee0
+  -F i_am_client=true
+  <br /><br />
+  curl -X DELETE http://visualrest.cs.tut.fi/user/testuser/group/group_for_friends/device/android_device
+  -F auth_username=testuser -F auth_timestamp=1343965523 -F auth_hash=90bcdc87a60feeae3b114133cc578ee01c6cd759
+  -F i_am_client=true
+  
+</p>
+

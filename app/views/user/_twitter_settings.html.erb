@@ -1,0 +1,102 @@
+<div id="settings_top">
+<!--<span>Twitter Settings</span> &nbsp; -->
+
+<%if params["hide"] == nil or params["hide"] == "true"%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/twitterSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/twitter_logo.png" alt="Twitter logo" /> 
+  </a>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/twitterSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    edit
+  </a>
+  </span>
+  </div>
+  <span class="subtext">Twitter integration</span>
+<%else%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/twitterSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    <img src="/thumbnails/twitter_logo.png" alt="Twitter logo" /> 
+  </a>
+  <span class="right">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/twitterSettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+    hide
+  </a>
+  </span>
+  </div>
+  
+  
+<%if not @twitter_auth_token%>
+  <div id="red-box">
+    <p>You need to give authorization to access your Twitter account!</p>
+    
+    <% if not @twitter_authentication_url %>
+      Problem initializing your connection to Twitter!
+    <%else%>
+      <a href="<%=@twitter_authentication_url%>">Authorize</a><br />
+      <!--Open popup window to <button onclick="basicPopup('<%=@twitter_authentication_url%>');return false">authorize!</button>-->
+    <%end%>
+
+  </div>
+<%end%>
+
+
+
+<%if @twitter_auth_token %>
+
+  <%if @twitter_authenticated == true %>
+  <fieldset>
+    <legend>Twitter account</legend>
+    <table>
+      <tr>
+        <th>Name:</th>
+        <td><%=@twitter_name%></td>
+      </tr>
+      <tr>
+        <th>Screen name:</th>
+        <td><a href="https://twitter.com/<%=@twitter_screen_name%>"><%=@twitter_screen_name%></a></td>
+      </tr>
+      <tr>
+        <th>User ID:</th>
+        <td><%=@twitter_uid%></td>
+      </tr>
+      <tr>
+        <th>Statuses count:</th>
+        <td><%=@twitter_statuses_count%></td>
+      </tr>
+    </table>
+    <center>        
+      <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/twitterDeleteToken', '/user/<%= session[:username] %>/twitterSettings/')" style="float: right;">Delete access token</button>      
+      <button style="align:center;" onclick="connected('twitter')">Test access token</button>
+    </center>
+  </fieldset>
+  
+  <%else%>
+    <p>PROBLEM WITH CONNECTING TO TWITTER!</p>
+    <center>        
+      <button style="align:center;" onclick="plainAjaxButton('/user/<%= session[:username] %>/twitterDeleteToken', '/user/<%= session[:username] %>/twitterSettings/')" style="float: right;">Delete access token</button>      
+      <button style="align:center;" onclick="connected('twitter')">Test access token</button>
+    </center>
+  <%end%>
+
+  
+  <fieldset>
+    <legend>Publish in Twitter</legend>
+      <center>     
+        <textarea id="input_twitter_publish" maxlength="140" style="width: 482px; height: 56px;"
+        onKeyDown="textCounter('input_twitter_publish','input_remlen',140)"
+        onKeyUp="textCounter('input_twitter_publish','input_remlen',140)"></textarea><br /> 
+        <input type="text" id="input_remlen" name="remLen1" size="3" maxlength="3" value="140">characters left<br />  
+        <button style="align:center;" onclick="publishInTwitter()" style="float: right;">Publish!</button>      
+      </center>
+  </fieldset>
+
+
+<%end%>
+
+
+  
+<%end%> <!-- db_auth_token -->
+  
+  
+  
+  
+  

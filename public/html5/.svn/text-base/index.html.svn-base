@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+	<head>
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<script type="text/javascript" src="js/Three.js"></script>
+		<script type="text/javascript" src="js/Detector.js"></script>
+		<script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+		<script type="text/javascript" src="js/Stats.js"></script>
+		<script type="text/javascript" src="js/modernizr.js"></script>
+		<script type="text/javascript" src="js/2.5.3-crypto-sha1.js"></script>
+		<script type="text/javascript" src="visualrest.js"></script>
+		<link  href="common.css" rel="stylesheet" /> 
+		<link  href="visualrest.css" rel="stylesheet" media="only screen and (min-width: 481px) "/>
+		<link rel="stylesheet" media="only screen and (max-width: 480px)" href="phone.css"/>
+		<script type="text/javascript">
+			$(document).ready(function(){
+				EnableFeatures();
+				$("nav li").click(function(){
+					$(".active").removeClass("active");
+					$(this).addClass("active");
+					$("#"+ this.id + "Content").addClass("active");
+					if ( ActiveContent != null && window[ActiveContent + "ContentDeactivate"] ){
+						window[ActiveContent + "ContentDeactivate"]();
+					}
+					if ( window[this.id + "ContentActivate"] ){
+						window[this.id + "ContentActivate"]();
+					}
+				});
+				
+				HomeContentActivate();
+			});
+			
+			function EnableFeatures(){
+				if ( Modernizr.webgl ){
+					$("#VisualWebGL").addClass("enabled");
+				}
+				
+				if ( Modernizr.filereader ){
+					$("#UploadFile").addClass("enabled");
+				}
+				
+			}
+		
+		
+		var ActiveContent;
+		
+		function HomeContentActivate(){
+			$.ajax({
+				url:"http://visualrest.cs.tut.fi/users", 
+				data: {'user': "", 'qoption[format]': 'json'}, 
+				dataType: 'jsonp',
+				jsonp: "qoption[json_callback]",
+				jsonpCallback: 'PopulateHomeContent'
+			});
+			
+			ActiveContent = "Home";
+		}
+		
+		function PopulateHomeContent(data){
+			var dropdown = $("#UserDropdown");
+			dropdown.empty();
+			for (var i in data){
+				if ( data.hasOwnProperty(i) ){
+					var value = $("<option value=\"" + data[i].username + "\">" + data[i].name + "</option>");
+					dropdown.append(value);
+				}
+			}
+		
+		}
+		
+		function SelectUser(username){
+			DoQuery({'q[user]': username});
+		}
+		
+		function DoQuery(query){
+			var data = {'qoption[format]': 'json'};
+			for ( var attr in query){
+				data[attr] = query[attr];
+			}
+			
+			if ( username && password ){
+				
+				var timestamp = new Date().getTime();
+				var hash = Crypto.SHA1(timestamp+password+"/files");
+				var auth ={
+					'i_am_client': true,
+					'auth_username': username,
+					'auth_timestamp': timestamp,
+					'auth_hash': hash
+				};
+				
+				for( var attr in auth ){
+					data[attr] = auth[attr];
+				}
+			}
+			
+			$.ajax({
+				url:"http://visualrest.cs.tut.fi/files", 
+				data:  data, 
+				dataType: 'jsonp',
+				jsonp: "qoption[json_callback]",
+				jsonpCallback: 'ShowResults'
+			});
+		
+		}
+		
+		function GenerateAuthString(path){
+			if ( username && password ){
+				var timestamp = new Date().getTime();
+				var hash = Crypto.SHA1(timestamp+password+path);
+				
+				var auth = "?i_am_client=true&auth_username=" + username + "&auth_timestamp=" + timestamp + "&auth_hash=" + hash;
+				return auth;
+			}
+			return "";
+		}
+		
+		var GalleryContents;
+		function ShowResults(data){
+			//var gallery = $("#Gallery");
+			//gallery.empty();
+			GalleryContents = [];
+			for ( var i in data ){
+				if ( data.hasOwnProperty(i) ){
+					for ( var j in data[i] ){
+						if ( data[i].hasOwnProperty(j) ){
+							//var img = $("<img src=\"" + data[i][j].thumbnail + "\" />");
+							GalleryContents.push(data[i][j]);
+						}
+					}
+				}
+			}
+			
+			UpdateGallery();
+		}
+		
+		function UpdateGallery(page){
+			
+			if ( !page ){
+				page = 1;
+			}
+			else{
+				page = parseInt(page);
+			}
+			
+			var pageselector = $("#GalleryPage");
+			pageselector.empty();
+			
+			var count = 18;
+			var pagecount = Math.ceil(GalleryContents.length / count);
+			
+			for ( var i = 1; i <= pagecount; ++i ){
+				if ( i == page ){
+					var selected = "selected";
+				}
+				else{
+					var selected = "";
+				}
+				var value = $("<option value=\"" + i + "\"" + selected + ">" + "Page: " + i + "</option>");
+				pageselector.append(value);
+			}
+			
+			var gallery = $("#Gallery");
+			gallery.empty();
+			
+			var offset = (page - 1) * count;
+			if ( GalleryContents.length < count * page){
+				count = GalleryContents.length - count * (page - 1);
+			}
+			
+			
+			
+			
+			for ( var i = 0 + offset; i < offset + count; ++i){
+				var img = $("<img src=\"" + GalleryContents[i].thumbnail + "\" onclick=\"ViewFile(" + i + ")\"/>");
+				gallery.append(img);
+			}
+			
+		}
+		
+		var CurrentFile = 0;
+		function ViewFile(index){
+			CurrentFile = index;
+			if ( index == GalleryContents.length - 1 ){
+				$("#Next").hide();
+			}
+			else{
+				$("#Next").show();
+			}
+			if ( index == 0 ){
+				$("#Prev").hide();
+			}
+			else{
+				$("#Prev").show();
+			}
+			
+			var authStr = GenerateAuthString(GalleryContents[index].essence_uri.substr(GalleryContents[index].essence_uri.indexOf("/user")));
+			
+			var unsupported = "Unsupported file format, you can download the file from <a href=\"" + GalleryContents[index].essence_uri + authStr + "\">here</a>.</div>";
+			
+			if ( GalleryContents[index].filetype.match(/image.*/) ){
+				
+				var img = $("<img src=\"" + GalleryContents[index].essence_uri + authStr + "\"/>");
+				var container = $("#FileContainer");
+				container.empty();
+				container.append(img);
+				$("#FileGallery").show();
+		
+			}
+			else if ( GalleryContents[index].filetype.match(/video.*/) ){
+				var tag = $("<video controls></video>");
+				
+				
+				if (  GalleryContents[index].essence_uri.match(/mp4/) ){
+				
+					if ( !tag.get(0).canPlayType('video/mp4; codecs=avc1.42E01E, mp4a.40.2') ){
+						tag = unsupported;
+					}
+					else{
+						var source = $('<source src="' + GalleryContents[index].essence_uri + authStr + '" type="video/mp4; codecs=avc1.42E01E, mp4a.40.2";</source>');
+						tag.append(source);
+					}
+				}
+				else if (  GalleryContents[index].essence_uri.match(/webm/) ){
+					
+					if ( !tag.get(0).canPlayType('video/webm; codecs=vp8, vorbis;') ){
+						tag = unsupported;
+					}
+					else{
+						var source = $('<source src="' + GalleryContents[index].essence_uri + authStr + '" type="video/mp4; codecs=vp8, vorbis;"</source>');
+						tag.append(source);
+					}
+				}
+				else if (  GalleryContents[index].essence_uri.match(/ogv/) ){
+				
+					if ( !tag.get(0).canPlayType('video/ogg; codecs="theora, vorbis"') ){
+						tag = unsupported;
+					}
+					else{
+						var source = $("<source src=\"" + GalleryContents[index].essence_uri + authStr + "\" type=\"video/ogg; codecs=\"theora, vorbis\";</source>");
+						tag.append(source);
+					}
+				}
+				else{
+					tag = unsupported;
+				}
+				
+			
+				
+				
+				var container = $("#FileContainer");
+				container.empty();
+				container.append(tag);
+				$("#FileGallery").show();
+			}
+			
+			else if ( GalleryContents[index].filetype.match(/audio.*/) ){
+				var tag = $("<audio controls></audio>");
+				
+				if ( GalleryContents[index].essence_uri.match(/mp3/) ){
+					if (!tag.get(0).canPlayType('audio/mp3') ){
+						tag = unsupported;
+					}
+					
+					else{
+						var source = $('<source src="' + GalleryContents[index].essence_uri + authStr + '" type="audio/mp3"</source>');
+						tag.append(source);
+					}
+				}
+				
+				var container = $("#FileContainer");
+				container.empty();
+				container.append(tag);
+				$("#FileGallery").show();
+			}
+			
+		}
+		
+		function ViewNextFile(){
+			ViewFile(CurrentFile + 1);
+		}
+		
+		function ViewPrevFile(){
+			ViewFile(CurrentFile - 1);
+		}
+		
+		function VisualWebGLContentActivate(){
+			if ( !VisualWebGL.initialized()){
+				VisualWebGL.init(824, 668);
+				VisualWebGL.animate();
+			}
+			else if ( !VisualWebGL.animating() ){
+				VisualWebGL.animate();
+			}
+			
+			ActiveContent = "VisualWebGL";
+		}
+		
+		function VisualWebGLContentDeactivate(){
+			VisualWebGL.stopAnimate();
+			console.log("stopped");
+			ActiveContent = null;
+		}
+		
+		function UploadFileContentActivate(){
+			var uploadbox = $("#uploadbox");
+			uploadbox.bind('dragenter', function(e){
+				e.stopPropagation();
+				e.preventDefault();
+			});
+			uploadbox.bind('dragover', function(e){
+				e.stopPropagation();
+				e.preventDefault();
+			});
+			
+			uploadbox.bind('drop', function(e){
+				e.stopPropagation();
+				e.preventDefault();
+				
+				var dt = e.originalEvent.dataTransfer;
+				var files = dt.files;
+				handleFiles(files);
+			});
+		
+		}
+		
+		var selectedImages = [];
+		
+		function handleFiles(files){
+			for ( var i = 0; i < files.length; ++i){
+				var file = files[i];
+				var imageType = /image.*/;
+				
+				if ( !file.type.match(imageType) ){
+					continue;
+				}
+				
+				var preview = $('<div class="preview"><div class="fileinfo">Name: ' + file.name + '<br/>Size: ' + Math.round(file.size / 1024) + ' kb' + '</div></div>');
+				var img = $('<img></img>');
+				img.attr('id', selectedImages.length);
+				selectedImages.push({File: file, selected: false});
+				
+				
+				img.hover(
+					function(){
+						$(this).parent().children(".fileinfo").show();
+					},
+					function(){
+						$(this).parent().children(".fileinfo").hide();
+					}
+				);
+				
+				img.click(function(){
+					
+					if ( selectedImages[this.id].selected == false ){
+						$(this).parent().appendTo($("#selectedfiles"));
+						selectedImages[this.id].selected = true;
+					}
+					else{
+						$(this).parent().appendTo($("#filepreviews"));
+						selectedImages[this.id].selected = false;
+					}
+					
+					updateUploadLink();
+					
+				});
+				preview.prepend(img);
+				var reader = new FileReader();
+				reader.onload = (function(aImg) { return function(e) { 
+					aImg.attr('src', e.target.result); 
+					
+				}; })(img);
+				reader.readAsDataURL(file);
+				
+				$("#filepreviews").append(preview);
+			}
+		}
+		function handleFile(files){
+			$("#filepreview").empty();
+			var file = files[0];
+			var imageType = /image.*/;
+			
+			//alert(file.name);
+			if ( !file.type.match(imageType) ){
+				//return;
+			}
+				
+			var preview = $('<div class="preview"><div class="fileinfo">Name: ' + file.name + '<br/>Size: ' + Math.round(file.size / 1024) + ' kb' + '</div></div>');
+			var img = $('<img></img>');
+			img.attr('id', selectedImages.length);
+			selectedImages.push({File: file, selected: true});
+				
+							
+			preview.prepend(img);
+			var reader = new FileReader();
+			reader.onload = (function(aImg) { return function(e) { 
+				aImg.attr('src', e.target.result); 
+				
+			}; })(img);
+			reader.readAsDataURL(file);
+			
+			$("#filepreview").append(preview);
+			$("#filepreview").append("<button onclick='UploadFiles()'>Upload</button>");
+			
+		}
+		
+		function updateUploadLink(){
+			var count = 0;
+			for ( var i = 0; i < selectedImages.length; ++i ){
+				if ( selectedImages[i].selected == true ){
+					count++;
+				}
+			}
+			
+			var uploadlink = $("#uploadlink");
+			uploadlink.empty();
+			if ( count == 0 ){
+				uploadlink.text("Select files by clicking them.")
+			}
+			else{
+				uploadlink.text("Selected " + count + " files. Click here to upload them");
+			}
+		
+		}
+		
+		function UploadFiles(){
+			
+			if ( selectedImages.length != 0 && username && password ){
+				$.ajax({
+					url: 'http://visualrest.cs.tut.fi/user/' + username + '/device/CrossOriginAjax' + '?dev_type=virtual_container&password=' + password + '&access-control-allow-origin=true',
+					type: 'PUT',
+					success: function(data){
+						console.log(data);
+					}
+				
+				});
+			}
+			
+			for ( var i = 0; i < selectedImages.length; ++i ){
+				if ( selectedImages[i].selected == true ){
+					var fd = new FormData();
+					fd.append('upload[datafile]', selectedImages[i].File);
+					
+					if ( username && password ){
+						fd.append('i_am_client', true);
+						fd.append('auth_username', username);
+						var timestamp = new Date().getTime();			
+						fd.append('auth_timestamp', timestamp);
+						var hash = Crypto.SHA1(timestamp+password+"/user/"+username+"/device/"+"CrossOriginAjax"+"/uploadFromBrowser");
+						fd.append('auth_hash', hash);
+					}
+					
+					$.ajax({
+						url: 'http://visualrest.cs.tut.fi/user/'+username+"/device/"+"CrossOriginAjax"+'/uploadFromBrowser' + '?access-control-allow-origin=true',
+						type: 'POST',
+						data: fd,
+						contentType: false,
+						processData: false,
+						success: function(data){
+							console.log(data);
+						}
+					});
+					
+					
+					
+				}
+			}
+		}
+		
+		var username;
+		var password;
+		function Login(){
+			var user = $("#Username");
+			var pass = $("#Password");
+			
+			if ( user[0].value.length != 0 && pass[0].value.length != 0 ){
+				username = user[0].value;
+				password = pass[0].value;
+				$("#login").hide();
+			}
+		}
+		</script>
+		
+	</head>
+	
+	<body>
+		<div id="container">
+			<header>
+				<h1>VisualRest</h1>
+			</header>
+			
+			<nav>
+				<ul>
+					<li class="active" id="Home"><a>Home</a></li>
+					<li id="UploadFile" class="feature"><a>Upload File</a></li>
+					<li id="VisualWebGL" class="feature"><a>WebGL Browser</a></li>
+				</ul>
+				<div id="login">
+					<input type="text" placeholder="Username" id="Username"/>
+					<input type="password" placeholder="Password" id="Password"/> 
+					<p><a onclick="Login()">Login</a></p>
+				</div>
+					
+			</nav>
+			
+			
+			
+			<div id="HomeContent" class="content active">
+				<select id="UserDropdown" onchange="SelectUser(this.options[this.selectedIndex].value)"></select>
+				<div id="Gallery"></div>
+				<select id="GalleryPage" onchange="UpdateGallery(this.options[this.selectedIndex].value)"></select>
+			</div>
+			
+			<div id="VisualWebGLContent" class="content">
+				
+			</div>
+			
+			<div id="FileGallery" class="overlay">
+				<div id="GalleryControls">
+					<div id="Prev" onclick="ViewPrevFile()">Prev</div>
+					<div id="Next" onclick="ViewNextFile()">Next</div>
+					<div id="Close" onclick="$('#FileGallery').hide();">Close</div>
+				</div>
+				<div id="FileContainer"></div>
+			</div>
+			
+			<div id="UploadFileContent" class="content">
+				<div class="option" id="DragAndDrop">
+					<div id="uploadbox">Upload File by dropping it here. <div id="filepreviews">File previews:</br></div> <div id="selectedfiles">Selected files:</br></div><div id="uploadlink" onclick="UploadFiles()">Select files by clicking them.</div></div>
+				</div>
+				<div class="option" id="InputFile">
+					<input type="file" onchange="handleFile(this.files)"/>
+					<div id="filepreview"></br></div>
+				</div>
+			</div>
+			
+			
+		</div>
+	</body>
+</html>

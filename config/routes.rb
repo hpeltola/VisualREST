@@ -168,7 +168,7 @@ ActionController::Routing::Routes.draw do |map|
   map.connect 'user/:username/saveUsersGroups', :controller => 'user', :action => 'saveUsersGroups'
   
   # Get info about a group
-  map.connect '/user/:username/group/:groupname', :controller => 'group', :action => 'getGroup', :conditions => {:method => :get}
+  map.connect '/user/:username/group/:groupname.:format', :controller => 'group', :action => 'getGroup', :conditions => {:method => :get}
 
   # Get group settings - Used in web-ui
   map.connect '/user/:username/groupSettings', :action => 'groupsettings', :controller => 'user', :conditions => {:method => :get}
@@ -379,6 +379,7 @@ ActionController::Routing::Routes.draw do |map|
   map.connect 'site/help/dropboxInstructions', :controller => 'query', :action => 'dropboxInstructions'
   map.connect 'site/help/twitterInstructions', :controller => 'query', :action => 'twitterInstructions'
   map.connect 'site/help/userInstructions', :controller => 'query', :action => 'userInstructions'
+  map.connect 'site/help/groupInstructions', :controller => 'query', :action => 'groupInstructions'
   map.connect 'site/help/containerInstructions', :controller => 'query', :action => 'containerInstructions'
   map.connect 'site/help/rubyContainer', :controller => 'query', :action => 'rubyContainer'
   map.connect 'site/help/androidContainer', :controller => 'query', :action => 'androidContainer'

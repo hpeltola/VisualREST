@@ -1,0 +1,11 @@
+.feature{
+	display: none;
+}
+
+.option{
+	display: none;
+}
+
+.enabled{
+	display: block;
+}

@@ -57,6 +57,16 @@ class GroupController < ApplicationController
       # Check that the user is owner or member in the group
       memberInGroup(@user, @owner, @group)
       
+      @json_callback = nil
+      if params[:qoption] && params[:qoption]["json_callback"]
+        @json_callback = params[:qoption]["json_callback"]
+      end
+  
+      if params[:qoption] && params[:qoption]["format"]
+        params[:format] = params[:qoption]["format"]
+      end
+      
+      
     rescue Exception => e
       putsE(e)
       render :text => "Error: #{e.to_s}", :status => 401
@@ -69,11 +79,16 @@ class GroupController < ApplicationController
       @members = Array.new
       @devices = Array.new
       @files = Array.new
+      @membernames = Array.new
+      @devicenames = Array.new
+      @filenames = Array.new
       
       
       ug = Usersingroup.find(:all, :conditions => ["group_id = ?", @group.id])
       ug.each do |x|
         @members.push(x.user)
+        
+        @membernames.push(x.user.username)
       end
   
       devicesAuth = DeviceAuthGroup.find(:all, :conditions => ["group_id = ?", @group.id])
@@ -81,8 +96,13 @@ class GroupController < ApplicationController
         device = x.device
         device["username"] = x.device.user.username
         @devices.push(device)
+        
+        tmp = Array.new
+        tmp.push({"username" => device["username"]})
+        tmp.push({"devicename" => device.dev_name})
+        @devicenames.push(tmp)
       end
-      
+
       
       filesAuth = DevfileAuthGroup.find(:all, :conditions => ["group_id = ?", @group.id])
       filesAuth.each do |x|
@@ -90,9 +110,29 @@ class GroupController < ApplicationController
         devfile["dev_name"] = x.devfile.device.dev_name
         devfile["username"] = x.devfile.device.user.username
         @files.push(devfile)
-      end
-      
 
+        tmp = Array.new
+        tmp.push({"username" => devfile["username"] })
+        tmp.push({"devicename" => devfile["username"] })
+        tmp.push({"filename" => x.devfile.path + x.devfile.name })
+        @filenames.push(tmp)
+      end
+     
+      # If requesting results in yaml or json
+      if params[:format] == "yaml" or params[:format] == "json"
+        @results = {}
+  
+        begin
+  
+          @results.merge!({"members" => @membernames})           
+          @results.merge!({"devices" => @devicenames})
+          @results.merge!({"files" => @filenames})
+            
+        rescue Exception => e
+          putsE(e)
+        end
+        puts @yaml_results.to_s
+      end
 
     rescue Exception => e
       putsE(e)
@@ -112,6 +152,12 @@ class GroupController < ApplicationController
       else
         format.html {render :getGroup, :layout=>true }
         format.atom {render :getGroup, :layout=>false }
+        format.yaml { render :text => @results.to_yaml, :layout=>false }
+        if @json_callback == nil
+          format.json { render :text => @results.to_json, :layout=>false }
+        else
+          format.json { render :text => @json_callback + '(' + @results.to_json + ')', :layout=>false }
+        end
       end
     end
     

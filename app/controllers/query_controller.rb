@@ -1796,6 +1796,11 @@ puts "bar"
   def androidContainer
     # do absolutely nothing at all... just render instructions
   end
+  
+  def groupInstructions
+    # do absolutely nothing at all... just render instructions
+  end
+  
 
 
   # Checks and updates device status on web page, depending on the last seen values. 

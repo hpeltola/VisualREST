@@ -1,0 +1,167 @@
+html, body{
+	height: 548px;
+	width: 989px;
+	padding: 0;
+	margin: 0;
+	background: #efefef;
+	overflow: hidden;
+}
+
+header{
+	
+	text-align: center;
+	border-radius: 5px;
+	border: 1px;
+	margin: 0;
+	padding: 0;
+	display: inline-block;
+	width: 100%;
+	height: 40px;
+}
+
+header h1{
+	display: inline;
+}
+
+#container{
+	width: 929px;
+	height: 488px;
+	margin: 30px;
+	background: #f9f9f9;
+	border-radius: 5px;
+	box-shadow: 3px 3px 5px 6px #ccc;
+	position: relative;
+}
+
+nav{
+	width: 185px;
+	height: 448px;
+	
+	display: inline-block;
+	float: left;
+	
+}
+
+
+#Gallery  img, .preview img{
+	margin: 3px;
+	width: 115px;
+	height: 115px;
+	border-radius: 3px;
+}
+
+.content{
+	width: 744px;
+	height: 448px;
+	float: right;
+	display: none;
+	
+}
+
+.active{
+	display: block;
+}
+
+.overlay{
+	display: none;
+	width: 929px;
+	height: 448px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	background: black;
+	
+}
+
+#FileGallery{
+	position: relative;
+	background: #CCCCCC;	
+	margin: 0 auto;
+}
+
+#FileGallery #FileContainer{
+	width: 929px;
+	line-height: 448px;
+	position: absolute;
+	top: 0;
+	text-align: center;
+	z-index: 100;
+}
+
+#FileGallery #FileContainer img{
+	max-width: 744px;
+	max-height: 448px;
+	top: 0;
+	text-align: center;
+	margin: 0 auto;
+	vertical-align: middle;
+}
+
+
+
+#FileGallery #GalleryControls{
+	background: #ffffff;
+	text-align: center;
+	display: inline-block;
+	
+}
+
+#Prev{
+	position: absolute;
+	top:10px;
+	left: 10px;
+	z-index: 1000;
+}
+
+#Next{
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	z-index: 1000;
+}
+
+#Close{
+	position: absolute;
+	bottom: 10px;
+	right: 15px;
+	z-index: 1000;
+}
+
+#uploadbox{
+	height: 100%;
+}
+
+
+.preview{
+	position: relative;
+	background: #efefef;
+	width: 130px;
+	display: inline-block;
+	margin: 3px;
+	border-radius: 3px;
+}
+
+.preview .fileinfo{
+	display: none;
+	position: absolute;
+	top: 0;
+	color: white;
+	background: black;
+	opacity: 0.8;
+	margin: inherit;
+	border-radius: inherit;
+	
+	
+}
+
+#login{
+	text-align: center;
+}
+
+
+#UploadFileContent #DragAndDrop{
+	display: block;
+}
+
+
+
