@@ -29,7 +29,10 @@
     <a href="<%=@flickr_url%>">Authorize</a>
   </div>
 
-
+  <% elsif not @flickr_data %>
+  <div id="red-box">
+    Problem initializing your connection to Twitter!
+  </div>
   <%else%>
   <fieldset>
   <legend>Flickr account</legend>

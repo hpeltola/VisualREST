@@ -1,0 +1,16 @@
+#user_groups {
+  float: left;
+}
+
+#path_container{
+  position: absolute;
+  top: 5px;
+  left: 430px;
+}
+
+body svg{
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  z-index: -1;
+}

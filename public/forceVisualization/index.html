@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Search results</title>
+  <script type="text/javascript" src="js/d3.v2.js"></script>
+  <script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+  <script type="text/javascript" src="js/2.5.3-crypto-sha1.js"></script>
+  <link type="text/css" rel="stylesheet" href="force.css"/>
+  <link type="text/css" rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+  
+  <script type="text/javascript" src="force.js"></script>
+
+  <div id="container">
+    <div id="logged_in" display="none">
+      <p id="logged_username"></p>      
+    </div>
+	  <div id="login" onkeypress="checkEnterMakeQuery(event)">
+		  <input type="text" placeholder="Username" id="Username"/>
+		  <input type="password" placeholder="Password" id="Password"/> 
+		  <button type="button" onclick="Login()">Login</button>
+	  </div>
+    <div id="path_container">
+      <p id="path"><b>Path:</b> /</p>
+    </div>
+
+    <div id="user_own_groups"></div>
+    <div id="user_member_in_groups"></div>
+
+  </div>
+
+</body>
+</html>

@@ -80,8 +80,13 @@ class ApplicationController < ActionController::Base
             end
 
             # calculate hash and compare with client hash
-            password = User.find_by_username(params["username"]).password
-            @auth_user = User.find_by_username(params["username"])
+            if params["auth_username"]
+              password = User.find_by_username(params["auth_username"]).password
+              @auth_user = User.find_by_username(params["auth_username"])              
+            else
+              password = User.find_by_username(params["username"]).password
+              @auth_user = User.find_by_username(params["username"])              
+            end
             # Hash that is calculated from the request
             hash = Digest::SHA1.hexdigest(params["auth_timestamp"] + password + request.path)
 

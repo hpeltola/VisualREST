@@ -331,6 +331,11 @@ class UserController < ApplicationController
   def authenticateUser
     username = authenticateClient
     
+    if params["access-control-allow-origin"] && params["access-control-allow-origin"] == "true"
+      headers['Access-Control-Allow-Origin'] = '*'
+      #headers['Access-Control-Request-Method'] = '*'  
+    end
+    
     if username == nil
       render :text => "Error, failed to authenticate user!", :status => 401
       return      
@@ -3475,9 +3480,7 @@ class UserController < ApplicationController
       end
       
     rescue Exception => e
-      putsE(e)
-      render :text => "Error in fetching access token!", :status => 409
-      return
+      putsE(e)      
     end
     
   end

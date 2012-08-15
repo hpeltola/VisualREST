@@ -97,9 +97,9 @@ class GroupController < ApplicationController
         device["username"] = x.device.user.username
         @devices.push(device)
         
-        tmp = Array.new
-        tmp.push({"username" => device["username"]})
-        tmp.push({"devicename" => device.dev_name})
+        tmp = Hash.new
+        tmp["username"] = device["username"]
+        tmp["devicename"] = device.dev_name
         @devicenames.push(tmp)
       end
 
@@ -111,10 +111,14 @@ class GroupController < ApplicationController
         devfile["username"] = x.devfile.device.user.username
         @files.push(devfile)
 
-        tmp = Array.new
-        tmp.push({"username" => devfile["username"] })
-        tmp.push({"devicename" => devfile["username"] })
-        tmp.push({"filename" => x.devfile.path + x.devfile.name })
+        tmp = Hash.new
+        tmp["username"] = devfile["username"]
+        tmp["devicename"] = devfile["dev_name"]
+        tmp["filename"] = x.devfile.path + x.devfile.name
+        tmp["essence_uri"] = @@http_host + "/user/" + devfile["username"] + 
+                              "/device/" + devfile["dev_name"] + "/essence" + x.devfile.path + x.devfile.name
+        blob = Blob.find(devfile.blob_id)
+        tmp["thumbnail"] = @@http_host + "/thumbnails/" + devfile.device_id.to_s + "/" + blob.thumbnail_name
         @filenames.push(tmp)
       end
      
@@ -296,9 +300,9 @@ class GroupController < ApplicationController
         raise Exception.new("Could not find  owner of the group")
       end
       
-      if @user.id != @owner.id
-        raise Exception.new("User is not the owner of the group")
-      end
+   #   if @user.id != @owner.id
+   #     raise Exception.new("User is not the owner of the group")
+   #   end
       
       @group = Group.find_by_user_id_and_name(@owner.id, params[:groupname])
       @device = Device.find_by_user_id_and_dev_name(@user.id, params[:devicename])
@@ -359,9 +363,9 @@ class GroupController < ApplicationController
         raise Exception.new("Could not find  owner of the group")
       end
       
-      if @user.id != @owner.id
-        raise Exception.new("User is not the owner of the group")
-      end
+     # if @user.id != @owner.id
+     #   raise Exception.new("User is not the owner of the group")
+     # end
       
       @group = Group.find_by_user_id_and_name(@user.id, params[:groupname])
       @device = Device.find_by_user_id_and_dev_name(@user.id, params[:devicename])
