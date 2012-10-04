@@ -1,9 +1,11 @@
 <div id="settings_top">
-<span>Group settings</span>
+
 <%if params["hide"] == nil or params["hide"] == "true"%>
-  <%puts "hide"%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/groupSettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+  <span>Group settings</span>
+  </a>
   <span class="right">
-  <a href="#" onclick="new Ajax.Request('/ajax/groupsettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/groupSettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=false&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
     edit
   </a>
   </span>
@@ -12,24 +14,16 @@
 
 
 <%else%>
-  <%puts "show"%>
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/groupSettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+  <span>Group settings</span>
+  </a>
   <span class="right">
-  <a href="#" onclick="new Ajax.Request('/ajax/groupsettings', {asynchronous:true, evalScripts:true, method:'post', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
+  <a href="#" onclick="new Ajax.Request('/user/<%= session[:username] %>/groupSettings', {asynchronous:true, evalScripts:true, method:'get', parameters: 'hide=true&authenticity_token=' + '<%= form_authenticity_token %>'}); return false;">
     hide
   </a>
   </span>
   </div>
   
-  <!--
-  <br/>
-  <fieldset>    
-  <legend>Your groups:</legend>
-  <ul>
-  <% @groups.each do |group| %>
-  <li><%= group.name %></li>
-  <% end %>
-  </ul>
-  </fieldset> -->
  
  <% if @groups != nil %>
  <fieldset>
@@ -39,7 +33,7 @@
   <% @groups.each do |x| %>
     <tr>
       <td>
-        <div id="deletegroup_<%=editID%>"><%= x.name %></div>
+        <div><a href="/user/<%= session[:username] %>/group/<%= x.name %>" id="deletegroup_<%=editID%>"><%= x.name %></a></div>
       </td>
       <td>
         <button onclick="deleteGroup('deletegroup_<%=editID%>');">Delete</button>
@@ -63,26 +57,7 @@
   <button  onclick="addNewGroup('newGroup');">Add</button>
 </fieldset>
 
+
  
-<!--
-<div id="newEmail"> 
-  <b>Add new group:</b><br /> 
-  <input id="newGroup" value=""> 
-  <button  onclick="addNewGroup('newGroup');" onkeypress="checkEnterNewGroup(event)">Add</button> 
-</div>
--->
- 
- 
- 
- <!--
- 
-  <p>
-  <%= link_to "Add new group", :controller => "user", :username => session[:username], :action => "addGroup" %>
-  </p>
-  
-  <p>
-    <%= link_to "Manage users in groups", :controller => "user", :action => "editUsersGroups", :username => session[:username]%>
-  </p>
-  -->
   
 <%end%>
